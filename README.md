@@ -9,7 +9,7 @@
 
 ## App demo
 
-- [Figs-CRM](https://)
+- [Figs-CRM On AWS](https://master.d2b1tg1ojgscyw.amplifyapp.com/)
 
 
 ## Getting started

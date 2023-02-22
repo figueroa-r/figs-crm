@@ -32,12 +32,12 @@ export default function CustomersBreadcrumb() {
             <StyledBreadcrumbContainer>
 
                 <Typography variant='h4' gutterBottom key={currentCrumb.id}>
-                    {currentCrumb.handle.pageTitle(currentCrumb.data)}
+                    {currentCrumb.handle.pageTitle}
                 </Typography>
 
                 <Breadcrumbs aria-label='breadcrumb' separator={<Separator component={'div'} />}>
                     {
-                        crumbs.map(({ id, pathname, handle: {crumb} }) => (
+                        crumbs.map(({ id, pathname, handle: {crumb}, data }) => (
                             <Link 
                                 to={pathname} 
                                 key={id} 
@@ -46,12 +46,12 @@ export default function CustomersBreadcrumb() {
                                 underline='hover' 
                                 color='text.primary' 
                                 variant='body1'>
-                                    {crumb}
+                                    {crumb(data)}
                             </Link>
                         ))
                     }
                     <Typography variant='body1' key={currentCrumb.id}>
-                        {currentCrumb.handle.crumb}
+                        {currentCrumb.handle.crumb(currentCrumb.data)}
                     </Typography>
                 </Breadcrumbs>
 

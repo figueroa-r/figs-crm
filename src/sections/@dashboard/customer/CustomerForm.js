@@ -122,8 +122,8 @@ export default function CustomerForm( {
             <Box
                 sx={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
+                    flexDirection: 'row',
+                    justifyContent: 'flex-end',
                     mt: 3
                     }}
                 >

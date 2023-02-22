@@ -6,12 +6,13 @@ import { faker } from '@faker-js/faker';
 
 const customerContacts = [...Array(24)].map((_, index) => ({
   id: faker.datatype.uuid(),
-  avatarUrl: `/assets/images/avatars/avatar_${index + 1}.jpg`,
+  avatarId: index + 1,
   firstName: faker.name.firstName(),
   lastName: faker.name.lastName(),
-  activeFlag: faker.datatype.boolean(),
+  active: faker.datatype.boolean(),
   title: faker.name.jobTitle(),
-  department: faker.name.jobArea()
+  department: faker.name.jobArea(),
+  contacts: []
 }));
 
 export default customerContacts;

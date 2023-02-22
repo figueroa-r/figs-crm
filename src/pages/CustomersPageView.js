@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useLoaderData, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLoaderData, useMatches } from 'react-router-dom';
 
 import { Helmet } from 'react-helmet-async';
 // @mui
@@ -15,7 +15,7 @@ import Iconify from '../components/iconify';
 // sections
 // import { CustomerBasicInformation } from '../sections/@dashboard/customer';
 // mock
-import CUSTOMERLIST from '../_mock/customer';
+// import CUSTOMERLIST from '../_mock/customer';
 
 // ----------------------------------------------------------------------
 
@@ -25,8 +25,11 @@ export default function CustomersPageView() {
   const CURRENT_CUSTOMER = useLoaderData();
 
   // print our location
-  const currentLocation = useLocation();
-  console.log(currentLocation);
+  // const currentLocation = useLocation();
+  // console.log(currentLocation);
+  const currentMatches = useMatches();
+  const tabsNavigator = currentMatches[currentMatches.length - 1].id.indexOf('tabs') !== -1;
+  console.log(tabsNavigator);
 
 
   const [value, setValue] = useState('1');
@@ -39,18 +42,20 @@ export default function CustomersPageView() {
         <title> Customers: {CURRENT_CUSTOMER.name} | Figs-CRM </title>
       </Helmet>
 
-        <Zoom in timeout={{enter: 500}}><div>
-        <Card sx={{p: 2, mb: 2}}>
-            <Scrollbar>
-            <Tabs value={value}>
-              <Tab component={NavLink} label='Basic Info' icon={ < Iconify icon='eva:info-outline'/> } iconPosition='start' to='./' style={({ isActive }) => isActive ? setValue('1') : undefined } value='1' />
-              <Tab component={NavLink} label="Contacts" icon={ < Iconify icon='eva:person-outline'/> } iconPosition='start' to='./contacts' style={({ isActive }) => isActive ? setValue('2') : undefined } value='2' />
-              <Tab component={NavLink} label="Tickets" icon={ < Iconify icon='eva:file-text-outline'/> } iconPosition='start' to='./tickets' style={({ isActive }) => isActive ? setValue('3') : undefined } value='3' />
-            </Tabs>
-            </Scrollbar>
-        </Card>
-        </div>
-        </Zoom>
+        {
+          tabsNavigator && <Zoom in timeout={{enter: 500}}><div>
+          <Card sx={{p: 2, mb: 2}}>
+              <Scrollbar>
+              <Tabs value={value}>
+                <Tab component={NavLink} label='Basic Info' icon={ < Iconify icon='eva:info-outline'/> } iconPosition='start' to='./' style={({ isActive }) => isActive ? setValue('1') : undefined } value='1' />
+                <Tab component={NavLink} label="Contacts" icon={ < Iconify icon='eva:person-outline'/> } iconPosition='start' to='./contacts' style={({ isActive }) => isActive ? setValue('2') : undefined } value='2' />
+                <Tab component={NavLink} label="Tickets" icon={ < Iconify icon='eva:file-text-outline'/> } iconPosition='start' to='./tickets' style={({ isActive }) => isActive ? setValue('3') : undefined } value='3' />
+              </Tabs>
+              </Scrollbar>
+          </Card>
+          </div>
+          </Zoom>
+        }
 
             <Zoom in timeout={{appear: 500, enter: 1000}}>
             <div>
@@ -70,5 +75,4 @@ export default function CustomersPageView() {
 
 
 
-// loader function... will change to API call for a specific customer...
-export const customerLoader = () => CUSTOMERLIST[0];
+

@@ -2,7 +2,7 @@ import { filter } from 'lodash';
 // react
 import React, { useState } from 'react';
 // react-router
-import { useLoaderData, Link as RouterLink } from 'react-router-dom';
+import { useLoaderData, Link as RouterLink, useMatches, Outlet } from 'react-router-dom';
 
 // @mui
 import {
@@ -40,7 +40,7 @@ const TABLE_HEAD = [
     { id: 'name', label: 'Name', align: 'left'},
     { id: 'department', label: 'Department', align: 'left'},
     { id: 'title', label: 'Title', align: 'left'},
-    { id: 'activeFlag', label: 'Active', align: 'center'},
+    { id: 'active', label: 'Active', align: 'center'},
     { id: ''}, // this element is for our menu popover button
 ]
 
@@ -78,6 +78,12 @@ return stabilizedThis.map((el) => el[0]);
 // ----------------------------------------------------------------------
 
 export default function CustomerContactsList() {
+
+  // matches for conditional render...
+  const currentMatches = useMatches();
+  const showTable = currentMatches[currentMatches.length - 1].id.indexOf('tabs') !== -1
+  console.log(showTable);
+
   const [open, setOpen] = useState(null);
 
   const [page, setPage] = useState(0);
@@ -155,7 +161,7 @@ export default function CustomerContactsList() {
 
   const isNotFound = !filteredContacts.length && !!filterName;
 
-  return(
+  if(showTable) return(
     <>
         <Card >
             <TableListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
@@ -176,8 +182,9 @@ export default function CustomerContactsList() {
                             {
                                 filteredContacts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
                                     // destructure our contacts list
-                                    const { id, avatarUrl, firstName, lastName, title, department, activeFlag } = row;
-                                    const name = firstName + lastName;
+                                    const { id, avatarId, firstName, lastName, title, department, active } = row;
+                                    const name = `${firstName} ${lastName}`;
+
                                     // boolean indicating whether the name matches our selected value...
                                     const selectedContact = selected.indexOf(name) !== -1;
 
@@ -189,7 +196,7 @@ export default function CustomerContactsList() {
 
                                             <TableCell component="th" scope="row" padding="none">
                                                 <Stack direction="row" alignItems="center" spacing={2}>
-                                                    <Avatar alt={name} src={avatarUrl}>{name[0]}</Avatar>
+                                                    <Avatar src={`/assets/images/avatars/avatar_${avatarId}.jpg`}/>
                                                     <Typography variant="subtitle2" noWrap>
                                                     {name}
                                                     </Typography>
@@ -201,7 +208,7 @@ export default function CustomerContactsList() {
                                             <TableCell align='left'>{title}</TableCell>
 
                                             <TableCell align='center'>
-                                                <Label color={(activeFlag && 'success') || 'error'} variant='soft'>{activeFlag ? 'ACTIVE' : 'INACTIVE'}</Label>
+                                                <Label color={active ? 'success' : 'error'} variant='soft'>{active ? 'ACTIVE' : 'INACTIVE'}</Label>
                                             </TableCell>
 
                                             <TableCell align="right">
@@ -294,5 +301,7 @@ export default function CustomerContactsList() {
 
     </>
   )
+
+  return <Outlet />
 
 }
