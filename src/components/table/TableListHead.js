@@ -52,7 +52,7 @@ export default function TableListHead({
         {headLabel.map((headCell) => (
           <TableCell
             key={headCell.id}
-            align={headCell.alignRight ? 'right' : 'left'}
+            align={headCell.align}
             sortDirection={orderBy === headCell.id ? order : false}
           >
             <TableSortLabel

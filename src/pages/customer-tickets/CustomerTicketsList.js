@@ -1,12 +1,17 @@
 import { filter } from 'lodash';
+
 // react
 import React, { useState } from 'react';
+
 // react-router
 import { useLoaderData,
-  useMatches, 
-  Outlet,
-  useNavigate
-   } from 'react-router-dom';
+    Link as RouterLink,
+    useMatches,
+    Outlet
+} from 'react-router-dom'
+
+// luxon
+import { DateTime } from 'luxon';
 
 // @mui
 import {
@@ -29,26 +34,26 @@ import {
 } from '@mui/material';
 
 // components
-import Label from '../../../../components/label';
-import Iconify from '../../../../components/iconify';
-import Scrollbar from '../../../../components/scrollbar';
-import { TableListHead, TableListToolbar} from '../../../../components/table';
-
-
-// mock data...
+import Label from '../../components/label';
+import Iconify from '../../components/iconify';
+import Scrollbar from '../../components/scrollbar';
+import { TableListHead, TableListToolbar} from '../../components/table';
 
 
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-    { id: 'name', label: 'Name', align: 'left'},
-    { id: 'department', label: 'Department', align: 'left'},
-    { id: 'title', label: 'Title', align: 'left'},
-    { id: 'active', label: 'Active', align: 'center'},
-    { id: ''}, // this element is for our menu popover button
+    { id: 'isOpen', label: 'Status', align: 'center'},
+    { id: 'creationDate', label: 'Created', align: 'left'},
+    { id: 'primaryContactId', label: 'Primary Contact', align: 'left'},
+    { id: 'categoryId', label: 'Category', align: 'center'},
+    { id: 'priorityId', label: 'Priority', align: 'center'},
+    { id: 'ticketNotes', label: 'Description', align: 'left'},
+    { id: ''}
 ]
 
 // ----------------------------------------------------------------------
+
 
 function descendingComparator(a, b, orderBy) {
     if (b[orderBy] < a[orderBy]) {
@@ -79,36 +84,43 @@ if (query) {
 return stabilizedThis.map((el) => el[0]);
 }
 
+
 // ----------------------------------------------------------------------
 
-export default function CustomerContactsList() {
+export default function CustomerTicketsList() {
+    
 
-  // useNavigate hook for drilling down
-  const navigate = useNavigate();
-
-  // matches for conditional render...
+    // matches for conditional render...
   const currentMatches = useMatches();
   const showTable = currentMatches[currentMatches.length - 1].id.indexOf('tabs') !== -1
-  // console.log(currentMatches);
+//   console.log(showTable);
 
   const [open, setOpen] = useState(null);
 
   const [page, setPage] = useState(0);
 
-  const [order, setOrder] = useState('asc');
+  const [order, setOrder] = useState('desc');
 
   const [selected, setSelected] = useState([]);
 
-  const [orderBy, setOrderBy] = useState('name');
+  const [orderBy, setOrderBy] = useState('creationDate');
 
   const [filterName, setFilterName] = useState('');
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-
   // data through router loader (similar to useEffect get data) and 
   // router context (similar to props)
-  const CONTACTS_LIST = useLoaderData();
+  const loader = useLoaderData();
+  // id, creationDate, createdBy, primaryContactId, isOpen, categoryId, priorityId, ticketNotes, interactions[]
+  const TICKETS_LIST = loader.tickets;
+  // id, name, avatarId
+  const CONTACTS_LIST = loader.contacts;
+  // id, name, variant
+  const CATEGORY_MAP = loader.categoryMap;
+  // id, name, variant
+  const PRIORITY_MAP = loader.priorityMap;
+
   // const CURRENT_CUSTOMER = useOutletContext();
 
   const handleOpenMenu = (event) => {
@@ -127,7 +139,7 @@ export default function CustomerContactsList() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = CONTACTS_LIST.map((n) => n.name);
+      const newSelecteds = TICKETS_LIST.map((n) => n.name);
       setSelected(newSelecteds);
       return;
     }
@@ -163,18 +175,12 @@ export default function CustomerContactsList() {
     setFilterName(event.target.value);
   };
 
-  const handleClickViewContactDetails = () => {
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - TICKETS_LIST.length) : 0;
 
-    const toUrl = open?.id;
-    handleCloseMenu();
-    navigate(toUrl);
-  }
+  const filteredTickets = applySortFilter(TICKETS_LIST, getComparator(order, orderBy), filterName);
 
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - CONTACTS_LIST.length) : 0;
+  const isNotFound = !filteredTickets.length && !!filterName;
 
-  const filteredContacts = applySortFilter(CONTACTS_LIST, getComparator(order, orderBy), filterName);
-
-  const isNotFound = !filteredContacts.length && !!filterName;
 
   if(showTable) return(
     <>
@@ -188,26 +194,37 @@ export default function CustomerContactsList() {
                             order={order}
                             orderBy={orderBy}
                             headLabel={TABLE_HEAD}
-                            rowCount={CONTACTS_LIST.length}
+                            rowCount={TICKETS_LIST.length}
                             numSelected={selected.length}
                             onRequestSort={handleRequestSort}
                             onSelectAllClick={handleSelectAllClick}
                         />
                         <TableBody>
                             {
-                                filteredContacts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                                    // destructure our contacts list
-                                    const { id, avatarId, firstName, lastName, title, department, active } = row;
-                                    const name = `${firstName} ${lastName}`;
+                                filteredTickets.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+                                    // destructure our ticket from ticketsList
+                                    const { id, creationDate, primaryContactId, isOpen, categoryId, priorityId, ticketNotes } = row;
+                                    const { name, avatarId} = CONTACTS_LIST.filter(contact => contact.id === primaryContactId)[0]
 
                                     // boolean indicating whether the name matches our selected value...
-                                    const selectedContact = selected.indexOf(name) !== -1;
+                                    const selectedTicket = selected.indexOf(name) !== -1;
 
                                     return (
-                                        <TableRow hover key={id} tabIndex={-1} role='checkbox' selected={selectedContact}>
+                                        <TableRow hover key={id} tabIndex={-1} role='checkbox' selected={selectedTicket}>
                                             <TableCell padding='checkbox'>
-                                                <Checkbox checked={selectedContact} onChange={(event) => handleClick(event, name)} />
+                                                <Checkbox checked={selectedTicket} onChange={(event) => handleClick(event, name)} />
                                             </TableCell>
+
+                                            <TableCell align='center'>
+                                                {
+                                                  isOpen ?
+                                                  <Iconify icon='material-symbols:folder-open-outline-rounded' sx={{ color: 'error.main' }} />
+                                                  : <Iconify icon='material-symbols:folder-outline-rounded' sx={{ color: 'text.disabled' }} />
+                                                }
+                                                {/* <Label color={isOpen ? 'error' : 'success'} variant='soft'>{isOpen ? 'OPEN' : 'CLOSED'}</Label> */}
+                                            </TableCell>
+
+                                            <TableCell align='left'>{DateTime.fromJSDate(creationDate).toLocaleString(DateTime.DATE_SHORT)}</TableCell>
 
                                             <TableCell component="th" scope="row" padding="none">
                                                 <Stack direction="row" alignItems="center" spacing={2}>
@@ -218,12 +235,18 @@ export default function CustomerContactsList() {
                                                 </Stack>
                                             </TableCell>
 
-                                            <TableCell align='left'>{department}</TableCell>
-
-                                            <TableCell align='left'>{title}</TableCell>
+                                            <TableCell align='center'>
+                                                <Label color={CATEGORY_MAP[categoryId].variant} variant='soft'>{CATEGORY_MAP[categoryId].name}</Label>
+                                            </TableCell>
 
                                             <TableCell align='center'>
-                                                <Label color={active ? 'success' : 'error'} variant='soft'>{active ? 'ACTIVE' : 'INACTIVE'}</Label>
+                                                <Label color={PRIORITY_MAP[priorityId].variant} variant='soft'>{PRIORITY_MAP[priorityId].name}</Label>
+                                            </TableCell>
+
+                                            <TableCell align='left'>
+                                                <Typography variant='subtitle2' noWrap>
+                                                    {ticketNotes}
+                                                </Typography>
                                             </TableCell>
 
                                             <TableCell align="right">
@@ -274,7 +297,7 @@ export default function CustomerContactsList() {
             <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}
                 component="div"
-                count={CONTACTS_LIST.length}
+                count={TICKETS_LIST.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}
@@ -300,7 +323,7 @@ export default function CustomerContactsList() {
           },
         }}
       >
-        <MenuItem onClick={handleClickViewContactDetails}>
+        <MenuItem component={RouterLink} to={open?.id} onClick={handleCloseMenu}>
           <Iconify icon={'eva:eye-fill'} sx={{ mr: 2 }} />
           View
         </MenuItem>
@@ -317,9 +340,6 @@ export default function CustomerContactsList() {
     </>
   )
 
-  return <Outlet />
+  return <Outlet context={{ contacts: CONTACTS_LIST, categoryMap: CATEGORY_MAP, priorityMap: PRIORITY_MAP}}/>
 
 }
-
-
-// component={RouterLink} to={open?.id}

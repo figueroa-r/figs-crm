@@ -5,7 +5,10 @@ import { styled } from '@mui/material/styles';
 import { 
     Box,
     Breadcrumbs, 
+    Button,
     Link, 
+    Slide, 
+    Stack,
     Typography } from '@mui/material';
 
 // styled components
@@ -18,22 +21,36 @@ import { StyledBreadcrumbContainer, StyledBreadcrumbRoot } from './styles';
 
 export default function CustomersBreadcrumb() {
     const matches = useMatches();
+    let buttonMatch = null;
+    if(matches[matches.length - 1].handle?.button) {
+        buttonMatch = matches[matches.length - 1]
+    }
     const crumbs = matches
         .filter((match) => Boolean(match.handle?.crumb));
 
     const currentCrumb = crumbs.pop();
 
-    // console.log(matches);
-    // console.log(crumbs);
-    // console.log(currentCrumb);
 
     return (
         <StyledBreadcrumbRoot>
             <StyledBreadcrumbContainer>
 
-                <Typography variant='h4' gutterBottom key={currentCrumb.id}>
-                    {currentCrumb.handle.pageTitle}
-                </Typography>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
+                    <Typography variant='h4' gutterBottom key={currentCrumb.id}>
+                        {currentCrumb.handle.pageTitle}
+                    </Typography>
+                    {
+                    buttonMatch && 
+                    <Slide direction="up" in mountOnEnter unmountOnExit>
+                        <Button
+                            variant='contained'
+                            component={RouterLink} to={`${buttonMatch.pathname}${buttonMatch.handle.button.link}`}
+                            >
+                                {buttonMatch.handle.button.name}
+                        </Button>
+                    </Slide>
+                    }
+                </Stack>
 
                 <Breadcrumbs aria-label='breadcrumb' separator={<Separator component={'div'} />}>
                     {

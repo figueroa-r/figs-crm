@@ -7,7 +7,7 @@ import {
     Card,
     TextField
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import { styled, alpha } from '@mui/material/styles';
 import { Box } from '@mui/system';
 
 
@@ -41,6 +41,12 @@ const StyledBox = styled(Box)(({ theme }) => ({
     },
     [theme.breakpoints.only('xs')]: {
         gridTemplateColumns: 'repeat(1, 1fr)'
+    }
+}))
+
+const StyledTextField = styled(TextField)(() => ({
+    '.MuiInputBase-input.Mui-disabled': {
+        WebkitTextFillColor: alpha('rgb(0,0,0)', .7)
     }
 }))
 
@@ -104,7 +110,7 @@ export default function CustomerForm( {
                     const {id, label, inputType, isRequired, validation} = fieldProps;
 
                     return (
-                        <TextField
+                        <StyledTextField
                             key={id}
                             id={id}
                             label={label}

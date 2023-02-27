@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLoaderData, useMatches } from 'react-router-dom';
 
 import { Helmet } from 'react-helmet-async';
@@ -24,15 +24,23 @@ export default function CustomersPageView() {
   // for now we have our customer data as the first customer in our mock data...
   const CURRENT_CUSTOMER = useLoaderData();
 
-  // print our location
-  // const currentLocation = useLocation();
-  // console.log(currentLocation);
   const currentMatches = useMatches();
   const tabsNavigator = currentMatches[currentMatches.length - 1].id.indexOf('tabs') !== -1;
-  console.log(tabsNavigator);
+
+  const [value, setValue] = useState(false);
+
+  const handleChangeTab = (event, newValue) => {
+    setValue(newValue);
+  }
+
+  // work around for error found on https://github.com/mui/material-ui/issues/32749
+  useEffect(() => {
+    setTimeout(() => {
+      setValue(0);
+    }, 0)
+  }, []);
 
 
-  const [value, setValue] = useState('1');
 
 
 
@@ -46,10 +54,10 @@ export default function CustomersPageView() {
           tabsNavigator && <Zoom in timeout={{enter: 500}}><div>
           <Card sx={{p: 2, mb: 2}}>
               <Scrollbar>
-              <Tabs value={value}>
-                <Tab component={NavLink} label='Basic Info' icon={ < Iconify icon='eva:info-outline'/> } iconPosition='start' to='./' style={({ isActive }) => isActive ? setValue('1') : undefined } value='1' />
-                <Tab component={NavLink} label="Contacts" icon={ < Iconify icon='eva:person-outline'/> } iconPosition='start' to='./contacts' style={({ isActive }) => isActive ? setValue('2') : undefined } value='2' />
-                <Tab component={NavLink} label="Tickets" icon={ < Iconify icon='eva:file-text-outline'/> } iconPosition='start' to='./tickets' style={({ isActive }) => isActive ? setValue('3') : undefined } value='3' />
+              <Tabs value={value} onChange={handleChangeTab}>
+                <Tab component={NavLink} label='Basic Info' icon={ < Iconify icon='eva:info-outline'/> } iconPosition='start' to='./' />
+                <Tab component={NavLink} label="Contacts" icon={ < Iconify icon='eva:person-outline'/> } iconPosition='start' to='./contacts' />
+                <Tab component={NavLink} label="Tickets" icon={ < Iconify icon='eva:file-text-outline'/> } iconPosition='start' to='./tickets' />
               </Tabs>
               </Scrollbar>
           </Card>
@@ -72,6 +80,8 @@ export default function CustomersPageView() {
   );
 }
 
+
+// <NavLink to='./'>{({ isActive }) => isActive ? setValue('1') : ''}</NavLink>
 
 
 

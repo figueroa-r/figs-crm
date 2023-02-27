@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLoaderData } from "react-router-dom";
 
 // @mui
 import {
@@ -15,6 +15,10 @@ import CustomersBreadcrumb from "../../components/customers-breadcrumb";
 
 // ----------------------------------------------------------------------
 export default function CustomersLayout() {
+
+  const customersList = useLoaderData();
+
+  console.log(customersList);
 
 
 
