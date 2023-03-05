@@ -1,5 +1,7 @@
 // react
 import { useState } from 'react';
+// react-router
+import { Link as RouterLink } from 'react-router-dom';
 import PropTypes from 'prop-types';
 // @mui
 import { LoadingButton } from '@mui/lab';
@@ -65,7 +67,7 @@ const emptyCustomer = {
     state: '',
     zip: '',
     isVerified: false,
-    status: 'active',
+    isActive: true,
     companyType: ''
 }
 
@@ -115,7 +117,7 @@ export default function CustomerForm( {
                             id={id}
                             label={label}
                             fullWidth
-                            value={customerForm[id]}
+                            value={customerForm[id] || ''}
                             onChange={handleChangeCustomerForm}
                             // error={validation}
                             disabled={edit === false}
@@ -134,13 +136,23 @@ export default function CustomerForm( {
                     }}
                 >
                 {
-                    edit === true &&
+                    customer !== emptyCustomer ?
                     <LoadingButton
                         size='medium'
                         color='error'
                         variant='contained'
                         onClick={handleCancelClick}
-                        >Cancel</LoadingButton>
+                        >Cancel
+                    </LoadingButton> :
+
+                    <LoadingButton
+                        component={RouterLink}
+                        to='../'
+                        size='medium'
+                        color='error'
+                        variant='contained'
+                        >Cancel
+                    </LoadingButton>
                 }
 
 

@@ -56,7 +56,7 @@ export default function CustomerListToolbar({ numSelected, filterName, onFilterN
         <StyledSearch
           value={filterName}
           onChange={onFilterName}
-          placeholder="Search by Customer name..."
+          placeholder="Search page by Customer name..."
           startAdornment={
             <InputAdornment position="start">
               <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', width: 20, height: 20 }} />
@@ -65,19 +65,26 @@ export default function CustomerListToolbar({ numSelected, filterName, onFilterN
         />
       )}
 
-      {numSelected > 0 ? (
+      {numSelected > 0 &&
         <Tooltip title="Delete">
           <IconButton>
             <Iconify icon="eva:trash-2-fill" />
           </IconButton>
         </Tooltip>
-      ) : (
-        <Tooltip title="Filter list">
+      }
+    </StyledRoot>
+  );
+}
+
+
+/*
+filter icon
+
+<Tooltip title="Filter list">
           <IconButton>
             <Iconify icon="ic:round-filter-list" />
           </IconButton>
         </Tooltip>
-      )}
-    </StyledRoot>
-  );
-}
+
+
+ */

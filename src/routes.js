@@ -13,12 +13,11 @@ import CustomerTicketsList from './pages/customer-tickets/CustomerTicketsList';
 import CustomerTicketForm from './pages/customer-tickets/CustomerTicketForm';
 
 // sections
-import { CustomerBasicInformation } from './sections/@dashboard/customer';
+import { CustomerBasicInformation, CustomerForm } from './sections/@dashboard/customer';
 import { CustomerContactsList } from './sections/@dashboard/@customer/customer-contacts';
 
 
 // mock data for loaders
-import customers from './_mock/customer';
 import customerContacts from './_mock/customer_contacts';
 import customerTickets from './_mock/customerTickets';
 
@@ -42,28 +41,24 @@ export default function Router() {
           path: 'customers', 
           element: <CustomersLayout />,
           errorElement: <Page404 />,
-          loader: figsCrmAPI.getCustomersList,
-          handle: {
-            crumb: () => 'Customers',
-            pageTitle: 'Customers List',
-          },
+          handle: { crumb: () => 'Customers', pageTitle: 'Customers List' },
           children: [
             {
               element: <CustomersList />,
               errorElement: <Page404 />,
-              loader: customersListLoader,
+              handle: { button: { name: 'New Customer', link: 'new' }},
               index: true,
             },
             { 
               path: 'new',
-              element: <>New Customer Form</>,
+              element: <CustomerForm edit={false} />,
               handle: { crumb: () => 'New', pageTitle: 'New Customer' }
             },
             {
               path: ':customerId',
               element: <CustomersPageView />,
-              loader: ({ params }) => customerLoader(params.customerId),
-              handle: { crumb: (loaderData) => loaderData.name, pageTitle: 'Customer Details' },
+              loader: ({ params }) => figsCrmAPI.getCustomerById(params.customerId),
+              handle: { crumb: (loaderData) => loaderData.data.name, pageTitle: 'Customer Details' },
               children: [
                 {element: <CustomerBasicInformation />, errorElement: <Page404 />, index: true, id: 'tabs1' },
                 {
@@ -132,13 +127,6 @@ export default function Router() {
   ])
 
   return browserRouter;
-}
-
-
-const customersListLoader = () => customers;
-const customerLoader = (customerId) => {
-  const filteredArray = customers.filter(customer => customer.id === customerId );
-  return filteredArray[0];
 }
 
 

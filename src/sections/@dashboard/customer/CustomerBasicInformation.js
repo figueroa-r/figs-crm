@@ -31,7 +31,7 @@ export default function CustomerBasicInformation() {
         avatarUrl, 
         name, 
         // isVerified, 
-        status, 
+        isActive, 
         // companyType 
     } = customer;
 
@@ -44,7 +44,7 @@ export default function CustomerBasicInformation() {
         <Grid item xs={12} md={4}>
           <Card sx={{ p: '80px 24px 40px' }}>
             <Label
-              color={(status === 'inactive' && 'error') || 'success'}
+              color={isActive ? 'success' : 'error'}
               sx={{
                 zIndex: 9,
                 top: 24,
@@ -53,7 +53,7 @@ export default function CustomerBasicInformation() {
                 textTransform: 'uppercase',
               }}
             >
-              {status}
+              {isActive ? 'ACTIVE' : 'INACTIVE'}
             </Label>
             <Box mb={5} display='flex' alignItems='center' justifyContent='center'>
                 <Avatar alt={name} src={avatarUrl} sx={{ width: 126, height: 126 }}/>
@@ -61,14 +61,14 @@ export default function CustomerBasicInformation() {
             <FormControlLabel
                 sx={{justifyContent: 'space-between', width: "100%", margin: '0px 0px 24px'}}
                 disabled={isEditable === false}
-                checked={status === 'active'}
+                checked={isActive}
                 labelPlacement='start'
                 label={
                     <Typography variant='body1' component='span' >
                     <Typography variant='subtitle2' gutterBottom>Active</Typography>
                     <Typography variant='body2' color='text.secondary'>Whether the account is in service or not</Typography>
                     </Typography>}
-                control={<Switch color={ status === 'active' ? 'success' : 'error'} size='medium'/>}
+                control={<Switch color={ isActive ? 'success' : 'error'} size='medium'/>}
                 />
             {isEditable === false && <LoadingButton
                 size='medium'

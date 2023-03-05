@@ -21,7 +21,7 @@ import Iconify from '../components/iconify';
 
 export default function CustomersPageView() {
 
-  // for now we have our customer data as the first customer in our mock data...
+  // this is the returned promise from our loader...
   const CURRENT_CUSTOMER = useLoaderData();
 
   const currentMatches = useMatches();
@@ -47,7 +47,7 @@ export default function CustomersPageView() {
   return (
     <>
       <Helmet>
-        <title> Customers: {CURRENT_CUSTOMER.name} | Figs-CRM </title>
+        <title> Customers: {CURRENT_CUSTOMER.data.name} | Figs-CRM </title>
       </Helmet>
 
         {
@@ -68,7 +68,7 @@ export default function CustomersPageView() {
             <Zoom in timeout={{appear: 500, enter: 1000}}>
             <div>
 
-            <Outlet context={CURRENT_CUSTOMER} />
+            <Outlet context={CURRENT_CUSTOMER.data} />
 
 
 

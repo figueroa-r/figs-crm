@@ -11,23 +11,28 @@ const instance = axios.create({
 
 
 export const figsCrmAPI = {
-    getCustomersList: () => {
-        let resp = {
-            alert: null,
-            data: null
-        }
+    // pass in parameters to modify pageNumber, pageSize, sortingField, and sortingDirection of requested resource...
+    // state should drive this request, and if a parameter is not included, it will result in default values
+    getCustomersByPageAndSort: (
+        pageNumber = 0,
+        pageSize = 10 ,
+        sortingField = 'name',
+        sortingDirection = 'asc' ) => instance.get(`/customers?page=${pageNumber}&size=${pageSize}&sort=${sortingField},${sortingDirection}`),
 
-        try {
-            resp.data = JSON.parse(instance.get('/customers'));
-        } catch (error) {
-            console.log(error);
-            resp.alert = error;
-        }
+    deleteCustomerById: ( customerId ) => instance.delete(`/customers/${customerId}`),
 
-        return resp;
-    },
+    getCustomerById: ( customerId ) => instance.get(`/customers/${customerId}`),
 
-    getCustomerInformation: ( customerId ) => instance.get(`/customers/${customerId}`),
+    getContactsByCustomerIdPageAndSort: ( 
+        customerId,
+        pageNumber = 0,
+        pageSize = 10,
+        sortingField = 'firstName',
+        sortingDirection = 'asc' ) => instance.get(`/contacts/search/byCustomerId?customerId=${customerId}&page=${pageNumber}&size=${pageSize}&sort=${sortingField},${sortingDirection}`),
+
+    getCustomerContactsDropdown: ( customerId ) => instance.get(`/customers/${customerId}/contacts?projection=contactsAvatarList`),
+
+    deleteContactById: ( contactId ) => instance.delete(`/contacts/${contactId}`)
 
 
 }

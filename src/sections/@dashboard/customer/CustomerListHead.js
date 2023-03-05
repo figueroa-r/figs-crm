@@ -35,6 +35,7 @@ export default function CustomerListHead({
   onRequestSort,
   onSelectAllClick,
 }) {
+  // curried function to pass to onRequestSort...
   const createSortHandler = (property) => (event) => {
     onRequestSort(event, property);
   };
@@ -52,7 +53,7 @@ export default function CustomerListHead({
         {headLabel.map((headCell) => (
           <TableCell
             key={headCell.id}
-            align={headCell.id === 'isVerified' ? 'center' : headCell.alignRight ? 'right' : 'left'}
+            align={headCell.align}
             sortDirection={orderBy === headCell.id ? order : false}
           >
             <TableSortLabel

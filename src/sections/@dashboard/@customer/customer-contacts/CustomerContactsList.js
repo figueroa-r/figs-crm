@@ -1,18 +1,24 @@
 import { filter } from 'lodash';
 // react
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // react-router
-import { useLoaderData,
+import {
   useMatches, 
   Outlet,
-  useNavigate
+  useNavigate,
+  useParams
    } from 'react-router-dom';
+
+import { useConfirm } from 'material-ui-confirm';
+import { useSnackbar } from 'notistack';
 
 // @mui
 import {
     Avatar,
+    Backdrop,
     Card,
     Checkbox,
+    CircularProgress,
     Divider,
     Paper,
     IconButton,
@@ -34,14 +40,16 @@ import Iconify from '../../../../components/iconify';
 import Scrollbar from '../../../../components/scrollbar';
 import { TableListHead, TableListToolbar} from '../../../../components/table';
 
+// api
+import { figsCrmAPI } from '../../../../service/FigsCRMBackend';
 
-// mock data...
+
 
 
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-    { id: 'name', label: 'Name', align: 'left'},
+    { id: 'firstName', label: 'Name', align: 'left'},
     { id: 'department', label: 'Department', align: 'left'},
     { id: 'title', label: 'Title', align: 'left'},
     { id: 'active', label: 'Active', align: 'center'},
@@ -50,90 +58,79 @@ const TABLE_HEAD = [
 
 // ----------------------------------------------------------------------
 
-function descendingComparator(a, b, orderBy) {
-    if (b[orderBy] < a[orderBy]) {
-      return -1;
-    }
-    if (b[orderBy] > a[orderBy]) {
-      return 1;
-    }
-    return 0;
-  }
-  
-function getComparator(order, orderBy) {
-return order === 'desc'
-    ? (a, b) => descendingComparator(a, b, orderBy)
-    : (a, b) => -descendingComparator(a, b, orderBy);
-}
-
-function applySortFilter(array, comparator, query) {
-const stabilizedThis = array.map((el, index) => [el, index]);
-stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) return order;
-    return a[1] - b[1];
-});
-if (query) {
-    return filter(array, (_user) => _user.name.toLowerCase().indexOf(query.toLowerCase()) !== -1);
-}
-return stabilizedThis.map((el) => el[0]);
-}
-
-// ----------------------------------------------------------------------
-
 export default function CustomerContactsList() {
 
   // useNavigate hook for drilling down
   const navigate = useNavigate();
 
-  // matches for conditional render...
+  // matches for conditional render of tabs...
   const currentMatches = useMatches();
   const showTable = currentMatches[currentMatches.length - 1].id.indexOf('tabs') !== -1
-  // console.log(currentMatches);
 
-  const [open, setOpen] = useState(null);
+  const { customerId } = useParams();
 
-  const [page, setPage] = useState(0);
+  // state for contacts table
 
-  const [order, setOrder] = useState('asc');
+  const [ data, setData ] = useState({ contactList: [], page: {number: 0, size: 10, totalElements: 0, totalPages: 0}, sortField: 'firstName', sortDirection: 'asc' });
+
+  const [ loading, setLoading ] = useState( false );
 
   const [selected, setSelected] = useState([]);
 
-  const [orderBy, setOrderBy] = useState('name');
+  const [open, setOpen] = useState(null);
 
   const [filterName, setFilterName] = useState('');
 
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [alert, setAlert] = useState({ contactName: '', contactId: null});
 
+  const { enqueueSnackbar } = useSnackbar();
 
-  // data through router loader (similar to useEffect get data) and 
-  // router context (similar to props)
-  const CONTACTS_LIST = useLoaderData();
-  // const CURRENT_CUSTOMER = useOutletContext();
+  const confirm = useConfirm();
 
-  const handleOpenMenu = (event) => {
-    setOpen(event.currentTarget);
-  };
+  useEffect( () => {
+    const getDataFromBackend = async () => {
+      setLoading(true); // activate loading indicator
+      const response = await figsCrmAPI.getContactsByCustomerIdPageAndSort( customerId, 0, 10, data.sortField, data.sortDirection )
+      setData({ ...data, contactList: response.data._embedded.contacts, page: response.data.page }); // destructure our response and format for easier access in state
+      setLoading(false);
+    }
+    getDataFromBackend();
+    // eslint-disable-next-line
+  }, [])
 
-  const handleCloseMenu = () => {
-    setOpen(null);
-  };
 
   const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
+    const isAsc = data.sortField === property && data.sortDirection === 'asc';
+    const direction = isAsc ? 'desc' : 'asc';
+
+    setLoading(true);
+    figsCrmAPI
+      .getContactsByCustomerIdPageAndSort( customerId, data.page.number, data.page.size, property, direction )
+      .then( (response) => {
+        setData({ contactList: response.data._embedded.contacts, page: response.data.page, sortField: property, sortDirection: direction })
+        setLoading(false);
+      })
+      .catch( (error) => console.log(error) );
+
   };
 
+  // adds all contacts on current page to selection (including those filtered out, excluding from other pages)
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = CONTACTS_LIST.map((n) => n.name);
+      const newSelecteds = data.contactList.map((n) => (`${n.firstName} ${n.lastName}`).trim());
       setSelected(newSelecteds);
       return;
     }
     setSelected([]);
   };
 
+  // only filters current page by name
+  const handleFilterByName = (event) => {
+    setFilterName(event.target.value);
+  };
+
+
+  // handles checking the box next to a contact
   const handleClick = (event, name) => {
     const selectedIndex = selected.indexOf(name);
     let newSelected = [];
@@ -150,52 +147,106 @@ export default function CustomerContactsList() {
   };
 
   const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+    setLoading(true);
+    figsCrmAPI
+      .getContactsByCustomerIdPageAndSort( customerId, newPage, data.page.size, data.sortField, data.sortDirection ) // maintain current sortField & sortDirection
+      .then( (response) => {
+        setData({ ...data, contactList: response.data._embedded.contacts, page: response.data.page }); // including page data in the event of new/deleted entries
+        setLoading( false );
+      })
+      .catch( (error) => console.log(error) );
+  }
+
+  const handleChangeRowsPerPage = ( event ) => {
+    setLoading(true);
+    figsCrmAPI
+      .getContactsByCustomerIdPageAndSort( customerId, 0, parseInt(event.target.value, 10), data.sortField, data.sortDirection ) // maintain current sortField & sortDirection
+      .then( (response) => {
+        setData({ ...data, contactList: response.data._embedded.contacts, page: response.data.page }); // including page data in the event of new/deleted entries
+        setLoading( false );
+      })
+      .catch( (error) => console.log(error) );
+  }
+
+  const handleOpenMenu = (event) => {
+    setOpen(event.currentTarget);
+    setAlert({ contactName: event.currentTarget.dataset.name, contactId: event.currentTarget.id });
   };
 
-  const handleChangeRowsPerPage = (event) => {
-    setPage(0);
-    setRowsPerPage(parseInt(event.target.value, 10));
-  };
-
-  const handleFilterByName = (event) => {
-    setPage(0);
-    setFilterName(event.target.value);
+  const handleCloseMenu = () => {
+    setOpen(null);
   };
 
   const handleClickViewContactDetails = () => {
-
     const toUrl = open?.id;
     handleCloseMenu();
     navigate(toUrl);
   }
 
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - CONTACTS_LIST.length) : 0;
+  const handleClickDelete = () => {
+    setOpen(null);
 
-  const filteredContacts = applySortFilter(CONTACTS_LIST, getComparator(order, orderBy), filterName);
+    confirm(
+      {
+        description: `This action cannot be undone. Please confirm delete of ${alert.contactName}. This will also remove their association to tickets.`,
+        cancellationButtonProps: {variant: 'outlined'},
+        confirmationButtonProps: {variant: 'contained', color: 'error'},
+        confirmationText: <><Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />{'Ok'}</>
+      })
+      .then(() => {
+        // console.log(`deleted contact with id: ${alert.contactId}`)
+        figsCrmAPI
+          .deleteContactById(alert.contactId)
+          .then( () => {
+            // create snackbar
+            enqueueSnackbar(`Deleted Contact: ${alert.contactName}`, {variant: 'warning'})
+            // get data and update data
+            setLoading(true);
+            figsCrmAPI
+              .getContactsByCustomerIdPageAndSort( customerId, data.page.number, data.page.size, data.sortField, data.sortDirection)
+              .then( (response) => {
+                setData({ ...data, contactList: response.data._embedded.contacts, page: response.data.page })
+                setLoading(false);
+              })
+              .catch( (error) => console.log(error) )
+          })
+          .catch( (error) => console.log(error) )
+        setAlert({ contactName: '', contactId: null })
+      })
+      .catch(() => {
+        console.log('cancelled confirm delete')
+        setAlert({ contactName: '', contactId: null })
+      })
+  }
+
+  const emptyRows = data.page.number > 0 ? data.page.size - data.contactList.length : 0;
+
+  const filteredContacts = filter(data.contactList, (_contact) => (`${_contact.firstName} ${_contact.lastName}`).trim().toLowerCase().indexOf(filterName.toLowerCase()) !== -1);
 
   const isNotFound = !filteredContacts.length && !!filterName;
+
 
   if(showTable) return(
     <>
         <Card >
+        { loading === true && <Backdrop open={loading}><CircularProgress /></Backdrop> }
             <TableListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
 
             <Scrollbar>
                 <TableContainer sx={{ minWidth: 800 }}>
                     <Table>
                         <TableListHead
-                            order={order}
-                            orderBy={orderBy}
+                            order={data.sortDirection}
+                            orderBy={data.sortField}
                             headLabel={TABLE_HEAD}
-                            rowCount={CONTACTS_LIST.length}
+                            rowCount={data.contactList.length}
                             numSelected={selected.length}
                             onRequestSort={handleRequestSort}
                             onSelectAllClick={handleSelectAllClick}
                         />
                         <TableBody>
                             {
-                                filteredContacts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+                                filteredContacts.map((row) => {
                                     // destructure our contacts list
                                     const { id, avatarId, firstName, lastName, title, department, active } = row;
                                     const name = `${firstName} ${lastName}`;
@@ -227,7 +278,7 @@ export default function CustomerContactsList() {
                                             </TableCell>
 
                                             <TableCell align="right">
-                                                <IconButton size="large" color="inherit" onClick={handleOpenMenu} key={id} id={id}>
+                                                <IconButton size="large" color="inherit" onClick={handleOpenMenu} key={id} id={id} data-name={name}>
                                                     <Iconify icon={'eva:more-vertical-fill'} />
                                                 </IconButton>
                                             </TableCell>
@@ -272,13 +323,13 @@ export default function CustomerContactsList() {
             </Scrollbar>
 
             <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
-                component="div"
-                count={CONTACTS_LIST.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 20, {label: 'All', value: data.page.totalElements}]}
+              component="div"
+              count={data.page.totalElements}
+              rowsPerPage={data.page.size}
+              page={data.page.number}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
             />
         </Card>
 
@@ -307,7 +358,7 @@ export default function CustomerContactsList() {
 
         <Divider variant='fullWidth' />
 
-        <MenuItem sx={{ color: 'error.main' }}>
+        <MenuItem sx={{ color: 'error.main' }} onClick={handleClickDelete}>
             <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
                 Delete
             </MenuItem>
