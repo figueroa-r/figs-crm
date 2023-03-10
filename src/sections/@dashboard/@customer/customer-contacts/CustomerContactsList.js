@@ -371,6 +371,3 @@ export default function CustomerContactsList() {
   return <Outlet />
 
 }
-
-
-// component={RouterLink} to={open?.id}

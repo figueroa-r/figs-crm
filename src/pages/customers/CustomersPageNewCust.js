@@ -10,7 +10,7 @@ import { styled } from '@mui/material/styles';
 import { Box } from '@mui/system';
 // components
 // sections
-import { CustomerForm } from '../sections/@dashboard/customer';
+import { CustomerForm } from '../../sections/@dashboard/customer';
 // mock
 
 

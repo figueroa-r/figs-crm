@@ -26,8 +26,8 @@ import { Box } from '@mui/system';
 
 
 // components
-import Label from '../../components/label';
-import Iconify from '../../components/iconify'
+import Label from '../../../components/label';
+import Iconify from '../../../components/iconify'
 
 
 // ----------------------------------------------------------------------

@@ -32,7 +32,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 // import { MobileDatePicker } from '@mui/x-date-pickers/MobileDatePicker'
 
 // components
-import Label from '../../components/label';
+import Label from '../../../components/label';
 // import Iconify from '../../components/iconify'
 
 

@@ -13,14 +13,14 @@ import {
   TablePagination, TableRow, Typography
 } from '@mui/material';
 // components
-import Iconify from '../components/iconify';
-import Label from '../components/label';
-import Scrollbar from '../components/scrollbar';
+import Iconify from '../../components/iconify';
+import Label from '../../components/label';
+import Scrollbar from '../../components/scrollbar';
 // sections
-import { CustomerListHead, CustomerListToolbar } from '../sections/@dashboard/customer';
+import { CustomerListHead, CustomerListToolbar } from '../../sections/@dashboard/customer';
 
 // backend API
-import { figsCrmAPI } from '../service/FigsCRMBackend';
+import { figsCrmAPI } from '../../service/FigsCRMBackend';
 
 
 // ----------------------------------------------------------------------

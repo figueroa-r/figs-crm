@@ -10,8 +10,8 @@ import {
   Zoom
 } from '@mui/material';
 // components
-import Scrollbar from '../components/scrollbar';
-import Iconify from '../components/iconify';
+import Scrollbar from '../../components/scrollbar';
+import Iconify from '../../components/iconify';
 // sections
 // import { CustomerBasicInformation } from '../sections/@dashboard/customer';
 // mock
