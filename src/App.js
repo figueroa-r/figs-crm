@@ -1,6 +1,9 @@
 // react router
 import { RouterProvider } from 'react-router-dom';
-
+// notistack
+import { SnackbarProvider } from 'notistack';
+// confirmation dialog
+import { ConfirmProvider } from 'material-ui-confirm';
 // Luxon localization provider
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon'
@@ -19,9 +22,13 @@ export default function App() {
   return (
     <ThemeProvider>
       {/* <ScrollToTop /> */}
-      <LocalizationProvider dateAdapter={AdapterLuxon}>
-      <RouterProvider router={Router()} />
-      </LocalizationProvider>
+      <SnackbarProvider maxSnack={1}>
+        <ConfirmProvider>
+          <LocalizationProvider dateAdapter={AdapterLuxon}>
+            <RouterProvider router={Router()} />
+          </LocalizationProvider>
+        </ConfirmProvider>
+      </SnackbarProvider>
     </ThemeProvider>
   );
 }

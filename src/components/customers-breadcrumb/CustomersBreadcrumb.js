@@ -21,15 +21,11 @@ import { StyledBreadcrumbContainer, StyledBreadcrumbRoot } from './styles';
 
 export default function CustomersBreadcrumb() {
     const matches = useMatches();
-    let buttonMatch = null;
-    if(matches[matches.length - 1].handle?.button) {
-        buttonMatch = matches[matches.length - 1]
-    }
     const crumbs = matches
         .filter((match) => Boolean(match.handle?.crumb));
 
     const currentCrumb = crumbs.pop();
-
+    const showNewButton = currentCrumb.handle?.button !== undefined;
 
     return (
         <StyledBreadcrumbRoot>
@@ -40,13 +36,15 @@ export default function CustomersBreadcrumb() {
                         {currentCrumb.handle.pageTitle}
                     </Typography>
                     {
-                    buttonMatch && 
+                    showNewButton && 
                     <Slide direction="up" in mountOnEnter unmountOnExit>
                         <Button
                             variant='contained'
-                            component={RouterLink} to={`${buttonMatch.pathname}${buttonMatch.handle.button.link}`}
+                            component={RouterLink} 
+                            to={currentCrumb.handle.button.link}
+                            relative='path'
                             >
-                                {buttonMatch.handle.button.name}
+                                {currentCrumb.handle.button.name}
                         </Button>
                     </Slide>
                     }
@@ -63,12 +61,12 @@ export default function CustomersBreadcrumb() {
                                 underline='hover' 
                                 color='text.primary' 
                                 variant='body1'>
-                                    {crumb(data)}
+                                    {crumb(data?.data)}
                             </Link>
                         ))
                     }
                     <Typography variant='body1' key={currentCrumb.id}>
-                        {currentCrumb.handle.crumb(currentCrumb.data)}
+                        {currentCrumb.handle.crumb(currentCrumb.data?.data)}
                     </Typography>
                 </Breadcrumbs>
 

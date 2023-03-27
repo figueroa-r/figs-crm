@@ -1,26 +1,38 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
-import { sample } from 'lodash';
+// import { sample } from 'lodash';
 // layouts
 import DashboardLayout from './layouts/dashboard';
 import CustomersLayout from './layouts/customer';
+import SingleCustomerLayout from './layouts/SingleCustomerLayout';
+import CustomerContactsLayout from './layouts/CustomerContactsLayout';
+import CustomerTicketsLayout from './layouts/CustomerTicketsLayout';
+
 // pages
 import Page404 from './pages/Page404';
 import DashboardAppPage from './pages/DashboardAppPage';
-import CustomersList from './pages/CustomersList';
-import CustomersPageView from './pages/CustomersPageView';
-import CustomerContactForm from './pages/customer-contacts/CustomerContactForm';
-import CustomerTicketsList from './pages/customer-tickets/CustomerTicketsList';
-import CustomerTicketForm from './pages/customer-tickets/CustomerTicketForm';
+import AboutMe from './pages/AboutMe';
+import ContactMeForm from './pages/ContactMeForm';
+import TableCustomersList from './pages/TableCustomersList';
+import EditCustomerForm from './pages/EditCustomerForm';
+import ViewCustomer from './pages/ViewCustomer';
+import TableContactsList from './pages/TableContactsList';
+import EditContactForm from './pages/EditContactForm';
+import ViewContact from './pages/ViewContact';
+import TableTicketsList from './pages/TableTicketsList';
+import EditTicketForm from './pages/EditTicketForm';
+import ViewTicket from './pages/ViewTicket';
 
-// sections
-import { CustomerBasicInformation } from './sections/@dashboard/customer';
-import { CustomerContactsList } from './sections/@dashboard/@customer/customer-contacts';
+// import CustomersList from './pages/TableCustomersList';
+// import CustomersPageView from './pages/CustomersPageView';
+// import CustomerContactForm from './pages/customer-contacts/CustomerContactForm';
+// import CustomerTicketsList from './pages/customer-tickets/CustomerTicketsList';
+// import CustomerTicketForm from './pages/customer-tickets/CustomerTicketForm';
 
 
 // mock data for loaders
-import customers from './_mock/customer';
-import customerContacts from './_mock/customer_contacts';
-import customerTickets from './_mock/customerTickets';
+// import customers from './_mock/customer';
+// import customerContacts from './_mock/customer_contacts';
+// import customerTickets from './_mock/customerTickets';
 
 // api for loaders
 import { figsCrmAPI } from './service/FigsCRMBackend';
@@ -32,95 +44,91 @@ export default function Router() {
   const browserRouter = createBrowserRouter([
     {
       path: '/figs-crm',
-      element: <DashboardLayout />,
+      element: <DashboardLayout />, // Dashboard and Navbar layout component
       handle: { crumb: () => 'Figs-CRM'},
       errorElement: <Page404 />,
       children: [
         { element: <Navigate to="/figs-crm/home" />, index: true },
         { path: 'home', element: <DashboardAppPage /> },
+        { path: 'about', element: <AboutMe /> },
+        { path: 'contact', element: <ContactMeForm />},
         { 
           path: 'customers', 
-          element: <CustomersLayout />,
+          element: <CustomersLayout />, // Customers Breadcrumb component
           errorElement: <Page404 />,
-          loader: figsCrmAPI.getCustomersList,
-          handle: {
-            crumb: () => 'Customers',
-            pageTitle: 'Customers List',
-          },
+          handle: { crumb: () => 'Customers', pageTitle: 'Customers List', button: { name: 'New Customer', link: 'new' }},
           children: [
-            {
-              element: <CustomersList />,
-              errorElement: <Page404 />,
-              loader: customersListLoader,
-              index: true,
-            },
-            { 
-              path: 'new',
-              element: <>New Customer Form</>,
-              handle: { crumb: () => 'New', pageTitle: 'New Customer' }
-            },
-            {
-              path: ':customerId',
-              element: <CustomersPageView />,
-              loader: ({ params }) => customerLoader(params.customerId),
-              handle: { crumb: (loaderData) => loaderData.name, pageTitle: 'Customer Details' },
+            { element: <TableCustomersList />, errorElement: <Page404 />, index: true },
+            { path: 'new', element: <EditCustomerForm isNew />, handle: { crumb: () => 'New', pageTitle: 'New Customer' }},
+            { path: ':customerId',
+              element: <SingleCustomerLayout />, // State management for single customer (basic info, contact/avatar mapping)
+              loader: ({ params }) => figsCrmAPI.getCustomerById(params.customerId),
+              handle: { crumb: (loaderData) => loaderData.name, pageTitle: 'Customer Details', button: { name: 'Edit Customer', link: 'edit'} },
               children: [
-                {element: <CustomerBasicInformation />, errorElement: <Page404 />, index: true, id: 'tabs1' },
+                { element: <ViewCustomer />, errorElement: <Page404 />, index: true, id: 'tabs1' }, // customer view
+                { path: 'edit', element: <EditCustomerForm />, errorElement: <Page404 />, handle: { crumb: () => 'Edit', pageTitle: 'Edit Customer' } },
                 {
                   path: 'contacts',
-                  element: <CustomerContactsList />,
+                  element: <CustomerContactsLayout />, // simple contacts layout
                   errorElement: <Page404 />,
-                  id: 'tabs2',
-                  loader: customerContactsLoader,
-                  handle: { crumb: () => 'Contacts', pageTitle: 'Customer Details', button: {name: 'New Contact', link: '/new'} },
+                  handle: { crumb: () => 'Contacts', pageTitle: 'Customer Details', button: {name: 'New Contact', link: 'new'} },
                   children: [
+                    { element: <TableContactsList />, errorElement: <Page404 />, id: 'tabs2', index: true },
                     {
                       path: 'new',
-                      element: <CustomerContactForm edit={false} />,
+                      element: <EditContactForm isNew />,
                       errorElement: <Page404 />,
                       handle: { crumb: () => 'New', pageTitle: 'New Contact'}
                     },
                     {
                       path: ':contactId',
-                      element: <CustomerContactForm edit />,
+                      element: <ViewContact />,
                       errorElement: <Page404 />,
-                      loader: ({ params }) => singleContactLoader(params.contactId),
-                      handle: { crumb: (loaderData) => `${loaderData.firstName} ${loaderData.lastName}`, pageTitle: 'Edit Contact'}
+                      loader: ({ params }) => figsCrmAPI.fetchContactById(params.contactId),
+                      handle: { crumb: (loaderData) => `${loaderData.firstName} ${loaderData.lastName}`, pageTitle: 'View Contact', button: { name: 'Edit Contact', link: 'edit'} }
+                    },
+                    {
+                      path: ':contactId/edit',
+                      element: <EditContactForm />,
+                      errorElement: <Page404 />,
+                      loader: ({ params }) => figsCrmAPI.fetchContactById(params.contactId),
+                      handle: { crumb: (loaderData) => `${loaderData.firstName} ${loaderData.lastName}`, pageTitle: 'Edit Contact' }
                     }
                   ]
                 },
                 {
                   path: 'tickets',
-                  element: <CustomerTicketsList />,
+                  element: <CustomerTicketsLayout />, // simple tickets layout
                   errorElement: <Page404 />,
-                  id: 'tabs3',
-                  loader: customerTicketsLoader,
-                  handle: { crumb: () => 'Tickets', pageTitle: 'Customer Details', button: {name: 'New Ticket', link: '/new'}},
+                  loader: ({ params }) => figsCrmAPI.fetchTicketContext(params.customerId),
+                  handle: { crumb: () => 'Tickets', pageTitle: 'Customer Details', button: {name: 'New Ticket', link: 'new'}},
                   children: [
+                    { element: <TableTicketsList />, errorElement: <Page404 />, id: 'tabs3', index: true },
                     {
                       path: 'new',
-                      element: <CustomerTicketForm isNewTicket />,
+                      element: <EditTicketForm isNew />,
                       errorElement: <Page404 />,
-                      loader: () => ({interactions: [], ticket: {}}),
                       handle: { crumb: () => 'New', pageTitle: 'New Ticket' }
                     },
                     {
                       path: ':ticketId',
-                      element: <CustomerTicketForm isNewTicket={false}/>,
-                      loader: ({ params }) => singleTicketLoader(params.ticketId),
-                      handle: { crumb: (loaderData) => `#${loaderData.id}`, pageTitle: 'View Ticket'}
+                      element: <ViewTicket />,
+                      errorElement: <Page404 />,
+                      loader: ({ params }) => figsCrmAPI.fetchTicketById(params.ticketId),
+                      handle: { crumb: (loaderData) => `TICKET-${loaderData.id}`, pageTitle: 'View Ticket', button: { name: 'Edit Ticket', link: 'edit'}}
+                    },
+                    {
+                      path: ':ticketId/edit',
+                      element: <EditTicketForm />,
+                      errorElement: <Page404 />,
+                      loader: ({ params }) => figsCrmAPI.fetchTicketById(params.ticketId),
+                      handle: { crumb: (loaderData) => `TICKET-${loaderData.id}`, pageTitle: 'Edit Ticket'}
                     }
                   ]
                 }
               ]
             }
           ],
-        },
-        {
-          path: 'about', element: <>about</>
-        },
-        {
-          path: 'contact', element: <>Contact</>
         },
       ],
     },
@@ -135,51 +143,62 @@ export default function Router() {
 }
 
 
-const customersListLoader = () => customers;
-const customerLoader = (customerId) => {
-  const filteredArray = customers.filter(customer => customer.id === customerId );
-  return filteredArray[0];
-}
+// const customersListLoader = () => customers;
+// const customerLoader = (customerId) => {
+//   const filteredArray = customers.filter(customer => customer.id === customerId );
+//   return filteredArray[0];
+// }
 
 
-const customerContactsLoader = () => customerContacts;
+// const customerContactsLoader = () => customerContacts;
 
-const singleContactLoader = (contactId) => {
-  const filteredArray = customerContacts.filter(contact => contact.id === contactId);
-  const singleContact = {...filteredArray[0]};
+// const singleContactLoader = (contactId) => {
+//   const filteredArray = customerContacts.filter(contact => contact.id === contactId);
+//   const singleContact = {...filteredArray[0]};
 
-  return singleContact;
-}
-
-
-const customerTicketsLoader = () => {
-  const contactsListDto = customerContacts.map(contact => ({id: contact.id, name: `${contact.firstName} ${contact.lastName}`, avatarId: contact.avatarId}))
-  const categoryMap = {
-    '1': {name: 'Engineering', variant: 'primary'},
-    '2': {name: 'Service', variant: 'success'},
-    '3': {name: 'Training', variant: 'error'}
-  }
-  const priorityMap = {
-    '1': {name: 'Low', variant: 'info'},
-    '2': {name: 'Medium', variant: 'success'},
-    '3': {name: 'High', variant: 'warning'},
-    '4': {name: 'Critical', variant: 'error'}
-  }
-
-  const ticketsWithContact = customerTickets.map(ticket => ({...ticket, primaryContactId: sample(contactsListDto).id}))
-
-  return {
-    'tickets': ticketsWithContact,
-    'contacts': contactsListDto,
-    'categoryMap': categoryMap,
-    'priorityMap': priorityMap
-  }
-}
-
-const singleTicketLoader = (ticketId) => {
-  const singleTicket = customerTicketsLoader().tickets.filter(ticket => ticket.id === ticketId)[0];
-
-  return singleTicket
-}
+//   return singleContact;
+// }
 
 
+// const customerTicketsLoader = () => {
+//   const contactsListDto = customerContacts.map(contact => ({id: contact.id, name: `${contact.firstName} ${contact.lastName}`, avatarId: contact.avatarId}))
+//   const categoryMap = {
+//     '1': {name: 'Engineering', variant: 'primary'},
+//     '2': {name: 'Service', variant: 'success'},
+//     '3': {name: 'Training', variant: 'error'}
+//   }
+//   const priorityMap = {
+//     '1': {name: 'Low', variant: 'info'},
+//     '2': {name: 'Medium', variant: 'success'},
+//     '3': {name: 'High', variant: 'warning'},
+//     '4': {name: 'Critical', variant: 'error'}
+//   }
+
+//   const ticketsWithContact = customerTickets.map(ticket => ({...ticket, primaryContactId: sample(contactsListDto).id}))
+
+//   return {
+//     'tickets': ticketsWithContact,
+//     'contacts': contactsListDto,
+//     'categoryMap': categoryMap,
+//     'priorityMap': priorityMap
+//   }
+// }
+
+// const singleTicketLoader = (ticketId) => {
+//   const singleTicket = customerTicketsLoader().tickets.filter(ticket => ticket.id === ticketId)[0];
+
+//   return singleTicket
+// }
+
+
+
+
+/*
+
+
+  loader: figsCrmAPI.getCustomersList,
+
+
+
+
+*/

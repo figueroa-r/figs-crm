@@ -7,6 +7,9 @@ export default function Typography(theme) {
         paragraph: {
           marginBottom: theme.spacing(2),
         },
+        overline: {
+          color: theme.palette.text.secondary
+        },
         gutterBottom: {
           marginBottom: theme.spacing(1),
         },

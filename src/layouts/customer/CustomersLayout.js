@@ -1,4 +1,5 @@
-import { Outlet, useLoaderData } from "react-router-dom";
+import { Outlet } from "react-router-dom";
+import { faker } from '@faker-js/faker';
 
 // @mui
 import {
@@ -10,18 +11,26 @@ import {
 // components
 import CustomersBreadcrumb from "../../components/customers-breadcrumb";
 
+const emptyCustomer = {
+  avatarUrl: faker.image.business(128, 128, true),
+  name: '',
+  alias: '',
+  companyType: '',
+  isActive: true,
+  isVerified: false,
+  address1: '',
+  address2: '',
+  city: '',
+  state: '',
+  zip: ''
+}
+
 
 
 
 // ----------------------------------------------------------------------
 export default function CustomersLayout() {
-
-  const customersList = useLoaderData();
-
-  console.log(customersList);
-
-
-
+  
     return (
       <Container>
 
@@ -31,7 +40,7 @@ export default function CustomersLayout() {
         <Grid container >
         {/** Child Element */}
         <Grid item xs={12}>
-        <Outlet />
+        <Outlet context={{customerData: emptyCustomer}}/>
         </Grid>
         {/** Child Element */}
         </Grid>

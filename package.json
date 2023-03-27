@@ -73,7 +73,9 @@
     "react-router-dom": "^6.4.2",
     "react-scripts": "^5.0.1",
     "simplebar-react": "^2.4.3",
-    "web-vitals": "^3.0.3"
+    "web-vitals": "^3.0.3",
+    "material-ui-confirm": "^3.0.9",
+    "notistack": "^3.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.19.3",

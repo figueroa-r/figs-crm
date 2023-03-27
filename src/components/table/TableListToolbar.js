@@ -28,18 +28,21 @@ export default function TableListToolbar({ numSelected, filterName, onFilterName
         <Typography component="div" variant="subtitle1">
           {numSelected} selected
         </Typography>
-      ) : (
-        <StyledSearch
+      ) : ( onFilterName !== undefined) ? 
+        (<StyledSearch
           value={filterName}
           onChange={onFilterName}
-          placeholder="Search user..."
+          placeholder="Search current results..."
           startAdornment={
             <InputAdornment position="start">
               <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled', width: 20, height: 20 }} />
             </InputAdornment>
           }
         />
-      )}
+      ) : (<Typography component="div" variant="subtitle1">
+          Select a Ticket to view Interactions
+      </Typography>)
+      }
 
       {numSelected > 0 ? (
         <Tooltip title="Delete">
