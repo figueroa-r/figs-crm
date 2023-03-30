@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+// hooks
 import { useState } from 'react';
 import { useLoaderData } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -10,6 +11,8 @@ import { AvatarCard, FieldsCard } from '../components/card-containers';
 // section
 import { ContactAvatarDialog } from '../sections/dialogs';
 import Iconify from '../components/iconify';
+// API
+import { figsCrmAPI } from '../service/FigsCRMBackend';
 
 // ----------------------------------------------------------------------
 
@@ -110,16 +113,14 @@ export default function EditContactForm({ isNew = false }) {
         contactInput.firstName !== emptyContact.firstName ||
         contactInput.lastName !== emptyContact.lastName ||
         contactInput.title !== emptyContact.title ||
-        contactInput.department !== emptyContact.department ||
-        contactInput.contactsList !== emptyContact.contactsList 
+        contactInput.department !== emptyContact.department 
     ) : (
         contactInput.active !== contactData.active ||
         contactInput.avatarId !== contactData.avatarId ||
         contactInput.firstName !== contactData.firstName ||
         contactInput.lastName !== contactData.lastName ||
         contactInput.title !== contactData.title ||
-        contactInput.department !== contactData.department ||
-        contactInput.contactsList !== contactData.contactsList 
+        contactInput.department !== contactData.department
     )
 
     return (

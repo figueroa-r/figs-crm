@@ -2,11 +2,14 @@ import axios from "axios";
 
 
 const instance = axios.create({
-    baseURL: "http://figscrmspringbootapi-env.eba-gr2gjba2.us-west-2.elasticbeanstalk.com/api/v1",
+    baseURL: "https://728pe9uco3.execute-api.us-west-2.amazonaws.com/test/api/v1",
     headers: {
         "Content-Type": "application/json"
     }
 })
+
+// baseURL: "http://localhost:5000/api/v1"
+// baseURL: 
 
 
 
@@ -16,12 +19,16 @@ export const figsCrmAPI = {
     getCustomerById: ( customerId ) => instance.get(`/customers/${customerId}`),
     createCustomer: ( customerDetails ) => instance.post('/customers', customerDetails),
     deleteCustomerById: (customerId) => instance.delete(`/customers/${customerId}`),
+    updateCustomerById: (customerId, propsToUpdate) => instance.patch(`/customers/${customerId}`, propsToUpdate), // propsToUpdate is an object with {property: value} syntax...
 
     // customer contacts endpoints
     fetchContactsList: ( customerId ) => (pageNumber = 0, pageSize = 10, sortingField = 'firstName', sortingDirection = 'asc') => instance.get(`/contacts/search/byCustomerId?customerId=${customerId}&page=${pageNumber}&size=${pageSize}&sort=${sortingField},${sortingDirection}`),
     fetchContactById: ( contactId ) => instance.get(`/contacts/${contactId}?projection=contactDetails`),
     createContact: ( customerId, contactDetails ) => instance.post(`/customers/${customerId}/contacts`, contactDetails),
     deleteContactById: (contactId) => instance.delete(`/contacts/${contactId}`),
+    deleteContactDetailById: (contactDetailId) => instance.delete(`/contactDetails/${contactDetailId}`),
+    updateContactDetailById: (contactDetailId, contactDetail) => instance.put(`/contactDetails/${contactDetailId}`, contactDetail),
+    createContactDetail: (contactDetail) => instance.post(`/contactDetails`, contactDetail),
 
     // customer tickets endpoints
     fetchTicketContext: ( customerId ) => Promise.all([instance.get('/categories'), instance.get('/priorities'), instance.get(`/customers/${customerId}/contacts?projection=contactsAvatarList`)]),

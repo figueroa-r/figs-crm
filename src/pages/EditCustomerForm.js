@@ -1,13 +1,16 @@
 import PropTypes from 'prop-types';
+// hooks
 import { useState } from 'react';
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, useNavigate } from 'react-router-dom'
 import { Helmet } from "react-helmet-async";
+import { useSnackbar } from 'notistack';
 // @mui
 import { FormControlLabel, Grid, Stack, Switch, TextField, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 // components
-// import Iconify from '../components/iconify';
 import { AvatarCard, FieldsCard } from '../components/card-containers';
+// API
+import { figsCrmAPI } from '../service/FigsCRMBackend';
 
 
 EditCustomerForm.propTypes = {
@@ -18,6 +21,9 @@ EditCustomerForm.propTypes = {
 export default function EditCustomerForm({ isNew = false }) {
     
     const { customerData } = useOutletContext();
+    const { enqueueSnackbar } = useSnackbar();
+
+    const navigate = useNavigate();
 
 
     const [customerInput, setCustomerInput] = useState({...customerData});
@@ -35,9 +41,61 @@ export default function EditCustomerForm({ isNew = false }) {
         setCustomerInput({...customerInput, [property]: newValue})
     }
 
-    const handleSaveCustomer = (event) => {
+    const handleSaveCustomer = async (event) => {
         event.preventDefault();
         setLoading(true);
+
+        if(isNew) {
+            // create new customer 
+            try {
+                const response = await figsCrmAPI.createCustomer(customerInput);
+                setLoading(false);
+                const newCustomerName = response.data.name;
+                const newCustomerId = response.data.id;
+                enqueueSnackbar(`Successfully created New Customer: ${newCustomerName}`, {variant: 'success'});
+                navigate(`../${newCustomerId}`);
+
+            } catch (error) {
+                console.log(error);
+                setLoading(false);
+                enqueueSnackbar('Error: try again or contact developer', {variant: 'error'});
+            }
+
+        } else { // when customer is being updated
+            const propertiesToCheck = [
+                'avatarUrl',
+                'name',
+                'alias',
+                'companyType',
+                'isActive',
+                'isVerified',
+                'address1',
+                'address2',
+                'city',
+                'state',
+                'zip'
+            ]
+            const newValues = {};
+
+            propertiesToCheck.forEach(prop => {
+                if(customerData[prop] !== customerInput[prop]) newValues[prop] = customerInput[prop];
+            })
+
+            // update customer
+            try {
+                const response = await figsCrmAPI.updateCustomerById(customerData.id, newValues);
+                const updatedName = response.data.name;
+                setLoading(false);
+                enqueueSnackbar(`Successfully updated customer: ${updatedName}`, {variant: 'info'})
+                navigate('../..')
+            } catch (error) {
+                console.log(error);
+                setLoading(false);
+                enqueueSnackbar('Error: try again or contact developer', {variant: 'error'});
+            }
+
+        }
+        
     }
 
     const isButtonDisabled = (
