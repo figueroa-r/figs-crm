@@ -2,14 +2,14 @@ import axios from "axios";
 
 
 const instance = axios.create({
-    baseURL: "http://localhost:8080/api/v1",
+    baseURL: "https://728pe9uco3.execute-api.us-west-2.amazonaws.com/test/api/v1",
     headers: {
         "Content-Type": "application/json"
     }
 })
 
+// baseURL: "http://localhost:8080/api/v1"
 // baseURL: 
-// baseURL: "https://728pe9uco3.execute-api.us-west-2.amazonaws.com/test/api/v1"
 
 
 
