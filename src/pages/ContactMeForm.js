@@ -1,7 +1,8 @@
 import { Helmet } from 'react-helmet-async';
 // react
 import React, { useState } from 'react';
-// notistack
+// hooks
+import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 // @mui
 import { Box, Grid, Container, Typography, TextField, InputAdornment } from '@mui/material';
@@ -10,10 +11,15 @@ import { LoadingButton } from '@mui/lab';
 // components
 import Iconify from '../components/iconify';
 
+// API
+import { figsCrmAPI } from '../service/FigsCRMBackend';
+
 
 
 
 export default function ContactMeForm() {
+
+    const navigate = useNavigate();
 
     const [formFields, setFormFields] = useState({
         fullName: '',
@@ -33,11 +39,17 @@ export default function ContactMeForm() {
     }
 
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        console.log('I submitted the form!')
-        enqueueSnackbar('Successfully sent contact information!', {variant: 'success'})
-        // logic for submitting data to backend... using Figs-CRM API
+
+        try {
+            await figsCrmAPI.postNewContactMe(formFields);
+            enqueueSnackbar('Successfully sent contact information!', {variant: 'success'})
+            navigate('../home');
+        } catch (error) {
+            console.log(error)
+            enqueueSnackbar('Error submitting the form, try again', { variant: 'error' })
+        }
     }
 
     return (

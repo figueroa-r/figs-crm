@@ -1,8 +1,11 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useOutletContext } from "react-router-dom";
 
 export default function CustomerContactsLayout() {
+
+    
+    const { customerData: { _links : { self }}} = useOutletContext();
     
     return (
-        <Outlet />
+        <Outlet context={{ customerURI: self.href }}/>
     )
 }

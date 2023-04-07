@@ -16,7 +16,7 @@ import { AvatarCard, FieldsCard } from '../components/card-containers';
 export default function ViewCustomer() {
 
     const {customerData: { isActive, isVerified, name, alias, companyType, avatarUrl, address1, address2, city, state, zip }} = useOutletContext();
-    // console.log(customerData);
+    // console.log(customerData.data);
 
     const customerStatus = isActive ? 'ACTIVE' : 'INACTIVE';
     const statusColor = isActive ? 'success' : 'error';

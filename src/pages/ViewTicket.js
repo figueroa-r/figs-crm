@@ -24,7 +24,8 @@ import { figsCrmAPI } from '../service/FigsCRMBackend';
 export default function ViewTicket() {
 
     const { data: ticketData } = useLoaderData();
-    const { id, isOpen, creationDate, primaryContactId, categoryId, priorityId, ticketNotes, interactions } = ticketData;
+    const { isOpen, creationDate, primaryContactId, categoryId, priorityId, ticketNotes, interactions, _links: { self : { href: ticketUri }}} = ticketData;
+ 
 
     const { categoriesMap, prioritiesMap, contactsMap } = useOutletContext();
 
@@ -51,20 +52,25 @@ export default function ViewTicket() {
     // eslint-disable-next-line
     const handleCreateNewInteraction = async (event) => {
 
-        const interaction = { user: 'Guest User', interactionDate: DateTime.now(), interactionDetails: newInteraction }
+        // const interaction = { user: 'Guest User', interactionDate: DateTime.now(), interactionDetails: newInteraction }
+        const interaction = {
+            user: 'Guest User',
+            interactionDate: DateTime.now(),
+            interactionDetails: newInteraction,
+            ticket: ticketUri
+        }
 
         setLoadingIndicator(true);
 
         try {
-            const response = await figsCrmAPI.createInteraction(id, interaction);
+            const response = await figsCrmAPI.createInteraction(interaction);
 
-            if(!response.ok) {
+            if( response.status >= 400 ) {
                 throw new Error('There was an error creating the interaction. Try again');
             }
-
             setNewInteraction('');
             setLoadingIndicator(false);
-            setInteractionsList([response.body, ...interactionsList])
+            setInteractionsList([response.data, ...interactionsList])
 
             enqueueSnackbar('Successfully created interaction', {variant: 'success'});
 

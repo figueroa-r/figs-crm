@@ -20,11 +20,9 @@ export default function SingleCustomerLayout() {
 
     const matches = useMatches(); // matches array, we only need the last one
     const currentTab = matches.pop().id;
-    // console.log(currentTab);
 
     // eslint-disable-next-line
     const [customerData, setCustomerData] = useState(initialCustomerData);
-    // const [contactsList, setContactsList] = useState({});
     
     return (
         <>

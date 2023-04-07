@@ -1,10 +1,12 @@
 import PropTypes from 'prop-types';
 // hooks
 import { useState } from 'react';
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData, useNavigate, useOutletContext } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { useSnackbar } from 'notistack';
+import { useConfirm } from 'material-ui-confirm';
 // @mui
-import { Button, Divider, FormControl, FormControlLabel, Grid, InputAdornment, InputLabel, MenuItem, Select, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Button, Divider, FormControl, FormControlLabel, Grid, IconButton, InputAdornment, InputLabel, MenuItem, Select, Stack, Switch, TextField, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 // components
 import { AvatarCard, FieldsCard } from '../components/card-containers';
@@ -13,6 +15,7 @@ import { ContactAvatarDialog } from '../sections/dialogs';
 import Iconify from '../components/iconify';
 // API
 import { figsCrmAPI } from '../service/FigsCRMBackend';
+
 
 // ----------------------------------------------------------------------
 
@@ -38,6 +41,10 @@ EditContactForm.propTypes = {
 export default function EditContactForm({ isNew = false }) {
 
     const existingContact = useLoaderData();
+    const { customerURI } = useOutletContext();
+    const { enqueueSnackbar } = useSnackbar();
+    const confirm = useConfirm();
+    const navigate = useNavigate();
 
     let contactData = emptyContact;
     let contactMethodsArray = [];
@@ -79,15 +86,35 @@ export default function EditContactForm({ isNew = false }) {
         const newContactMethod = {...emptyContactMethod, id: nextContactMethodId};
 
         setContactMethodsInput([...contactMethodsInput, newContactMethod])
-        setNextContactMethodId(nextContactMethodId + 1);
+        setNextContactMethodId(nextContactMethodId - 1);
     }
 
-    // this method should change to include material-ui-confirm...
     const handleDeleteContactMethod = (event) => {
         const deleteMethodId = parseInt(event.target.id, 10);
-        const newMethodsList = contactMethodsInput.filter( method => method.id !== deleteMethodId)
 
-        setContactInput(newMethodsList);
+        if(deleteMethodId > 0) {
+            confirm({
+                description: "This action cannot be undone. Please confirm delete of contact detail from database.",
+                cancellationButtonProps: { variant: 'outlined' },
+                confirmationButtonProps: { variant: 'contained', color: 'error' },
+                confirmationText: (
+                    <>
+                        <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
+                        {'Ok'}
+                    </>
+                ),
+            }).then( () => {
+                figsCrmAPI.deleteContactDetailById(deleteMethodId).then( () => {
+                    enqueueSnackbar(`Deleted contact method from ${contactName}`, { variant: 'warning' })
+                })
+            })
+        }
+
+        // remove from existing array
+        const newMethodsList = contactMethodsInput.filter( method => method.id !== deleteMethodId)
+        console.log(newMethodsList)
+
+        setContactMethodsInput([...newMethodsList]);
     }
 
     // handler for controlled input of method
@@ -101,9 +128,40 @@ export default function EditContactForm({ isNew = false }) {
 
 
 
-    const handleSaveContact = (event) => {
+    const handleSaveContact = async (event) => {
         event.preventDefault();
         setLoading(true);
+        let contactId = contactInput?.id;
+
+        // when the contact is new....
+        if(isNew) {
+            try {
+                const newContact = await figsCrmAPI.createContact({...contactInput, customer: customerURI});
+                contactId = newContact.data.id;
+            } catch (error) {
+                console.log(error);
+            }
+
+        } else {
+            // when the contact is existing
+            try {
+                const existingContactProperties = {...contactInput}
+                await figsCrmAPI.patchContactById(contactId, existingContactProperties)
+            } catch (error) {
+                console.log(error);
+            }
+        }
+        // batch save of the contact methods...
+        try {
+            await figsCrmAPI.patchContactById(contactId, {contactsList: contactMethodsInput})
+        } catch (error) {
+            console.log(error)
+        }
+
+        enqueueSnackbar("Successfully saved contact", { variant: 'success' });
+        setLoading(false);
+        navigate(`../${contactId}`)
+
     }
 
     // boolean comparing controlled input to starting values
@@ -213,6 +271,9 @@ export default function EditContactForm({ isNew = false }) {
 
                         return (
                             <Grid item container xs={12} key={id}>
+                                <IconButton onClick={handleDeleteContactMethod} id={id}>
+                                    <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} id={id}/>
+                                </IconButton>
                                 <FormControl sx={{ minWidth: 100, mr: 2, mb:2 }}>
                                     <InputLabel id='method-type'>Type</InputLabel>
                                     <Select

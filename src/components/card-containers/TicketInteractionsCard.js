@@ -19,7 +19,7 @@ export default function TicketInteractionsCard({ interactionsArray, children }) 
 
     return (
         <Grid item container xs={12}>
-            <Card sx={{ p: 3 }}>
+            <Card sx={{ p: 3, flexGrow: 1 }}>
                 <Grid container>
                     <Typography variant='h4' mb={2}>
                         Interactions
