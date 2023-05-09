@@ -14,7 +14,7 @@ import { TableListHead, TableListToolbar, TablePopOver } from '../components/tab
 // sections
 import { ContactsTableBody } from '../sections/tables'
 // API
-import { figsCrmAPI } from '../service/FigsCRMBackend';
+import { getContactsList, deleteContact } from '../service/API-v2/ContactsService';
 // Hooks
 import useTableList from '../hooks/useTableList'
 
@@ -24,7 +24,7 @@ const TABLE_HEAD = [
     { id: 'firstName', label: 'Name', align: 'left'},
     { id: 'department', label: 'Department', align: 'left'},
     { id: 'title', label: 'Title', align: 'left'},
-    { id: 'active', label: 'Active', align: 'center'},
+    { id: 'isActive', label: 'Active', align: 'center'},
     { id: ''}, // this element is for our menu popover button
 ]
 
@@ -53,11 +53,11 @@ export default function TableContactsList() {
         handleOpenMenu,
         handleCloseMenu,
         handleClickDelete
-    } = useTableList(figsCrmAPI.fetchContactsList(customerId), 'contacts', figsCrmAPI.deleteContactById)
+    } = useTableList(getContactsList(customerId), 'contacts', deleteContact)
 
     const emptyRows = pageNumber > 0 ? pageSize - data.length : 0;
 
-    const filteredContacts = filter(data, (_contact) => (`${_contact.firstName} ${_contact.lastName}`).trim().toLowerCase().indexOf(filterName.toLowerCase()) !== -1);
+    const filteredContacts = filter(data, (_contact) => _contact.fullName.trim().toLowerCase().indexOf(filterName.toLowerCase()) !== -1);
 
     const isNotFound = !filteredContacts.length && !!filterName;
 

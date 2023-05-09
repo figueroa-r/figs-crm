@@ -4,13 +4,20 @@ import { useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import { Helmet } from "react-helmet-async";
 import { useSnackbar } from 'notistack';
+import { useFormik } from 'formik';
 // @mui
 import { FormControlLabel, Grid, Stack, Switch, TextField, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+// utils
+import { formatErrorSnackbar } from '../utils/formatErrorMessage';
 // components
 import { AvatarCard, FieldsCard } from '../components/card-containers';
 // API
-import { figsCrmAPI } from '../service/FigsCRMBackend';
+import { createCustomer, updateCustomerById } from '../service/API-v2/CustomersService';
+// customer validation
+import { customerValidationSchema } from '../validationSchemas/CustomerSchema';
+
+
 
 
 EditCustomerForm.propTypes = {
@@ -25,96 +32,57 @@ export default function EditCustomerForm({ isNew = false }) {
 
     const navigate = useNavigate();
 
+    const customerFormik = useFormik({
+        initialValues: { ...customerData },
+        validationSchema: customerValidationSchema,
+        onSubmit: async (values) => {
+            // event.preventDefault();
+            setLoading(true);
+    
+            try {
+    
+                let response;
+                if(isNew) response = await createCustomer(values)
+                else {
+                    const updatedFields = {};
+                    Object.keys(values).forEach((field) => {
+                        if(values[field] !== customerFormik.initialValues[field]) updatedFields[field] = values[field]
+                    }) 
+    
+                    response = await updateCustomerById(values.id, updatedFields)
+                }
+    
+                const customerName = response.data.name;
+                const message = `Successfully ${isNew ? 'created new' : 'updated'} customer: ${customerName}`
+                enqueueSnackbar( message, { variant: 'success', style: { whiteSpace: 'pre-line' }} )
+    
+                navigate('../..')
+                
+            } catch (error) {
+    
+                enqueueSnackbar( ...formatErrorSnackbar(
+                    error,
+                    'Error Saving Customer'
+                ))
+                
+            } finally {
+    
+                setLoading(false)
+            }
+        },
+        validateOnBlur: true
+    })
 
-    const [customerInput, setCustomerInput] = useState({...customerData});
     const [loading, setLoading] = useState(false);
 
     const title = isNew ? 'New Customer' : 'Edit Customer';
-    const customerStatus = customerInput.isActive ? 'ACTIVE' : 'INACTIVE';
-    const statusColor = customerInput.isActive ? 'success' : 'error';
-    const verificationColor = customerInput.isVerified ? 'success' : 'warning'
-
-    const handleChangeCustomerInput = (event) => {
-        const property = event.target.id;
-        const newValue = (property === 'isActive' || property === 'isVerified') ? event.target.checked : event.target.value;
-
-        setCustomerInput({...customerInput, [property]: newValue})
-    }
-
-    const handleSaveCustomer = async (event) => {
-        event.preventDefault();
-        setLoading(true);
-
-        if(isNew) {
-            // create new customer 
-            try {
-                const response = await figsCrmAPI.createCustomer(customerInput);
-                setLoading(false);
-                const newCustomerName = response.data.name;
-                const newCustomerId = response.data.id;
-                enqueueSnackbar(`Successfully created New Customer: ${newCustomerName}`, {variant: 'success'});
-                navigate(`../${newCustomerId}`);
-
-            } catch (error) {
-                console.log(error);
-                setLoading(false);
-                enqueueSnackbar('Error: try again or contact developer', {variant: 'error'});
-            }
-
-        } else { // when customer is being updated
-            const propertiesToCheck = [
-                'avatarUrl',
-                'name',
-                'alias',
-                'companyType',
-                'isActive',
-                'isVerified',
-                'address1',
-                'address2',
-                'city',
-                'state',
-                'zip'
-            ]
-            const newValues = {};
-
-            propertiesToCheck.forEach(prop => {
-                if(customerData[prop] !== customerInput[prop]) newValues[prop] = customerInput[prop];
-            })
-
-            // update customer
-            try {
-                const response = await figsCrmAPI.updateCustomerById(customerData.id, newValues);
-                const updatedName = response.data.name;
-                setLoading(false);
-                enqueueSnackbar(`Successfully updated customer: ${updatedName}`, {variant: 'info'})
-                navigate('../..')
-            } catch (error) {
-                console.log(error);
-                setLoading(false);
-                enqueueSnackbar('Error: try again or contact developer', {variant: 'error'});
-            }
-
-        }
-        
-    }
-
-    const isButtonDisabled = (
-        customerData.name !== customerInput.name ||
-        customerData.avatarUrl !== customerInput.avatarUrl ||
-        customerData.alias !== customerInput.alias ||
-        customerData.companyType !== customerInput.companyType ||
-        customerData.isActive !== customerInput.isActive ||
-        customerData.isVerified !== customerInput.isVerified ||
-        customerData.address1 !== customerInput.address1 ||
-        customerData.address2 !== customerInput.address2 ||
-        customerData.city !== customerInput.city ||
-        customerData.state !== customerInput.state ||
-        customerData.zip !== customerInput.zip
-    )
+    const customerStatus = customerFormik.values.isActive ? 'ACTIVE' : 'INACTIVE';
+    const statusColor = customerFormik.values.isActive ? 'success' : 'error';
+    const verificationColor = customerFormik.values.isVerified ? 'success' : 'warning'
 
 
     return (
-        <form>
+        <form onSubmit={customerFormik.handleSubmit} noValidate>
             <Helmet>
                 <title> {`${title} | Figs-CRM`} </title>
             </Helmet>
@@ -123,8 +91,8 @@ export default function EditCustomerForm({ isNew = false }) {
                 <AvatarCard
                     labelColor={statusColor}
                     labelText={customerStatus}
-                    avatar={customerData.avatarUrl}
-                    name={customerData.name}
+                    avatar={customerFormik.values.avatarUrl}
+                    name={customerFormik.values.name}
                 >
                     <TextField
                         name='avatarUrl'
@@ -132,14 +100,16 @@ export default function EditCustomerForm({ isNew = false }) {
                         disabled
                         id='avatarUrl'
                         label='Avatar Link'
-                        value={customerInput.avatarUrl}
-                        onChange={handleChangeCustomerInput}
+                        value={customerFormik.values.avatarUrl}
+                        onChange={customerFormik.handleChange}
+                        error={Boolean(customerFormik.errors.avatarUrl && customerFormik.touched.avatarUrl)}
+                        helperText={customerFormik.touched.avatarUrl && customerFormik.errors.avatarUrl}
                     />
 
 
                     <FormControlLabel
-                        checked={customerInput.isActive}
-                        control={<Switch color={statusColor} id='isActive' onChange={handleChangeCustomerInput}/>}
+                        checked={customerFormik.values.isActive}
+                        control={<Switch color={statusColor} id='isActive' onChange={customerFormik.handleChange}/>}
                         sx={{ display: 'flex', justifyContent: 'space-between', textAlign: 'left', mt: 2, ml: 0 }}
                         labelPlacement='start'
                         label={
@@ -150,8 +120,8 @@ export default function EditCustomerForm({ isNew = false }) {
                         }
                     />
                     <FormControlLabel
-                        checked={customerInput.isVerified}
-                        control={<Switch color={verificationColor} id='isVerified' onChange={handleChangeCustomerInput}/>}
+                        checked={customerFormik.values.isVerified}
+                        control={<Switch color={verificationColor} id='isVerified' onChange={customerFormik.handleChange}/>}
                         sx={{ display: 'flex', justifyContent: 'space-between', textAlign: 'left', mt: 2, ml: 0  }}
                         labelPlacement='start'
                         label={
@@ -172,8 +142,10 @@ export default function EditCustomerForm({ isNew = false }) {
                             fullWidth
                             id='name'
                             label='Customer Name'
-                            value={customerInput.name}
-                            onChange={handleChangeCustomerInput}
+                            value={customerFormik.values.name}
+                            onChange={customerFormik.handleChange}
+                            error={customerFormik.touched.name && Boolean(customerFormik.errors.name)}
+                            helperText={customerFormik.touched.name && customerFormik.errors.name}
                         />
                     </Grid>
                     <Grid item xs={12} md={6}>
@@ -182,8 +154,10 @@ export default function EditCustomerForm({ isNew = false }) {
                             fullWidth
                             id='alias'
                             label='Customer Alias'
-                            value={customerInput.alias || ''}
-                            onChange={handleChangeCustomerInput}
+                            value={customerFormik.values.alias || ''}
+                            onChange={customerFormik.handleChange}
+                            error={customerFormik.touched.alias && Boolean(customerFormik.errors.alias)}
+                            helperText={customerFormik.touched.alias && customerFormik.errors.alias}
                         />
                     </Grid>
                     <Grid item xs={12}>
@@ -192,8 +166,10 @@ export default function EditCustomerForm({ isNew = false }) {
                             fullWidth
                             id='address1'
                             label='Customer Address Line 1'
-                            value={customerInput.address1}
-                            onChange={handleChangeCustomerInput}
+                            value={customerFormik.values.address1}
+                            onChange={customerFormik.handleChange}
+                            error={customerFormik.touched.address1 && Boolean(customerFormik.errors.address1)}
+                            helperText={customerFormik.touched.address1 && customerFormik.errors.address1}
                         />
                     </Grid>
                     <Grid item xs={12}>
@@ -202,8 +178,10 @@ export default function EditCustomerForm({ isNew = false }) {
                             fullWidth
                             id='address2'
                             label='Customer Address Line 2'
-                            value={customerInput.address2}
-                            onChange={handleChangeCustomerInput}
+                            value={customerFormik.values.address2 || ''}
+                            onChange={customerFormik.handleChange}
+                            error={customerFormik.touched.address2 && Boolean(customerFormik.errors.address2)}
+                            helperText={customerFormik.touched.address2 && customerFormik.errors.address2}
                         />
                     </Grid>
                     <Grid item xs={12} md={6}>
@@ -212,8 +190,10 @@ export default function EditCustomerForm({ isNew = false }) {
                             fullWidth
                             id='city'
                             label='City'
-                            value={customerInput.city}
-                            onChange={handleChangeCustomerInput}
+                            value={customerFormik.values.city}
+                            onChange={customerFormik.handleChange}
+                            error={customerFormik.touched.city && Boolean(customerFormik.errors.city)}
+                            helperText={customerFormik.touched.city && customerFormik.errors.city}
                         />
                     </Grid>
                     <Grid item xs={12} md={6}>
@@ -222,8 +202,10 @@ export default function EditCustomerForm({ isNew = false }) {
                             fullWidth
                             id='state'
                             label='State'
-                            value={customerInput.state}
-                            onChange={handleChangeCustomerInput}
+                            value={customerFormik.values.state}
+                            onChange={customerFormik.handleChange}
+                            error={customerFormik.touched.state && Boolean(customerFormik.errors.state)}
+                            helperText={customerFormik.touched.state && customerFormik.errors.state}
                         />
                     </Grid>
                     <Grid item xs={12} md={6}>
@@ -232,8 +214,10 @@ export default function EditCustomerForm({ isNew = false }) {
                             fullWidth
                             id='zip'
                             label='Zip'
-                            value={customerInput.zip}
-                            onChange={handleChangeCustomerInput}
+                            value={customerFormik.values.zip}
+                            onChange={customerFormik.handleChange}
+                            error={customerFormik.touched.zip && Boolean(customerFormik.errors.zip)}
+                            helperText={customerFormik.touched.zip && customerFormik.errors.zip}
                         />
                     </Grid>
                     <Grid item xs={12} md={6}>
@@ -242,17 +226,18 @@ export default function EditCustomerForm({ isNew = false }) {
                             fullWidth
                             id='companyType'
                             label='Company Type'
-                            value={customerInput.companyType}
-                            onChange={handleChangeCustomerInput}
+                            value={customerFormik.values.companyType}
+                            onChange={customerFormik.handleChange}
+                            error={customerFormik.touched.companyType && Boolean(customerFormik.errors.companyType)}
+                            helperText={customerFormik.touched.companyType && customerFormik.errors.companyType}
                         />
                     </Grid>
                     <Grid item xs={12} sx={{ textAlign: 'end' }}>
                         <LoadingButton
-                            disabled={!isButtonDisabled}
                             loading={loading}
                             variant='contained'
-                            onClick={handleSaveCustomer}
                             type='submit'
+                            disabled={!customerFormik.dirty}
                         >
                             {isNew ? <span>Create Customer</span> : <span>Update Customer</span>}
                         </LoadingButton>

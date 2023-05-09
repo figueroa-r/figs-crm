@@ -1,31 +1,38 @@
+import { isEqual } from 'lodash';
 import PropTypes from 'prop-types';
 // hooks
-import { useState } from 'react';
-import { useLoaderData, useNavigate, useOutletContext } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
-import { useSnackbar } from 'notistack';
+import { useFormik, getIn } from 'formik';
 import { useConfirm } from 'material-ui-confirm';
+import { useSnackbar } from 'notistack';
+import { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { useLoaderData, useNavigate, useOutletContext } from 'react-router-dom';
 // @mui
-import { Button, Divider, FormControl, FormControlLabel, Grid, IconButton, InputAdornment, InputLabel, MenuItem, Select, Stack, Switch, TextField, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+import { Button, Divider, FormControlLabel, Grid, IconButton, InputAdornment, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material';
+// utils
+import { formatErrorSnackbar } from '../utils/formatErrorMessage';
+// validation
+import { contactValidationSchema } from '../validationSchemas/ContactSchema';
 // components
 import { AvatarCard, FieldsCard } from '../components/card-containers';
 // section
-import { ContactAvatarDialog } from '../sections/dialogs';
 import Iconify from '../components/iconify';
+import { ContactAvatarDialog } from '../sections/dialogs';
 // API
-import { figsCrmAPI } from '../service/FigsCRMBackend';
+import { createContact, deleteContactDetail, updateContact } from '../service/API-v2/ContactsService';
 
 
 // ----------------------------------------------------------------------
 
 const emptyContact = { 
-    active: true, 
-    avatarId: NaN, 
+    isActive: true, 
+    avatarId: 1, 
     firstName: '', 
     lastName: '', 
     title: '', 
-    department: ''
+    department: '',
+    contactsList: []
 }
 
 const emptyContactMethod = {
@@ -34,6 +41,8 @@ const emptyContactMethod = {
     contactDetail: ''
 }
 
+// ----------------------------------------------------------------------
+
 EditContactForm.propTypes = {
     isNew: PropTypes.bool
 }
@@ -41,58 +50,33 @@ EditContactForm.propTypes = {
 export default function EditContactForm({ isNew = false }) {
 
     const existingContact = useLoaderData();
-    const { customerURI } = useOutletContext();
+    const { customerData: { id: customerId } } = useOutletContext();
     const { enqueueSnackbar } = useSnackbar();
     const confirm = useConfirm();
     const navigate = useNavigate();
 
-    let contactData = emptyContact;
-    let contactMethodsArray = [];
-
-    if(!isNew) {
-        ({contactsList: contactMethodsArray, ...contactData} = existingContact?.data)
-    }
-
-
-    const [contactInput, setContactInput] = useState( { ...contactData } ) // controlled input for contact entity
-    const [contactMethodsInput, setContactMethodsInput] = useState( [...contactMethodsArray] )
-    const [loading, setLoading] = useState(false); // loading indicator for fetch/submit
     const [openAvatarSelect, setOpenAvatarSelect] = useState(false); // dialog modal state
     const [nextContactMethodId, setNextContactMethodId] = useState(-1); // placeholder for id of new contact methods (post vs put)
-
-
-    const title = isNew ? 'New Contact' : 'Edit Contact';
-    const contactStatus = contactInput.active ? 'ACTIVE' : 'INACTIVE';
-    const statusColor = contactInput.active ? 'success' : 'error';
-    const avatarUrl = `/assets/images/avatars/avatar_${contactInput.avatarId}.jpg`;
-    const contactName = (`${contactInput.firstName} ${contactInput.lastName}`).trim()
 
     // dialog handler
     const handleCloseDialog = (selectedValue) => {
         setOpenAvatarSelect(false);
-        setContactInput({...contactInput, avatarId: selectedValue});
+        contact.setFieldValue('avatarId', selectedValue);
+        // setContactInput({...contactInput, avatarId: selectedValue});
     }
 
-    // controlled form input
-    const handleChangeContactInput = (event) => {
-        const property = event.target.id;
-        const newValue = (property === 'active') ? event.target.checked : event.target.value;
-
-        setContactInput({...contactInput, [property]: newValue })
-    }
-
-    // handlers for contact methods
+    // handlers for adding contact methods
     const handleAddNewContactMethod = () => {
         const newContactMethod = {...emptyContactMethod, id: nextContactMethodId};
-
-        setContactMethodsInput([...contactMethodsInput, newContactMethod])
+        contact.setFieldValue('contactsList', [...contact.values.contactsList, newContactMethod])
         setNextContactMethodId(nextContactMethodId - 1);
     }
 
-    const handleDeleteContactMethod = (event) => {
-        const deleteMethodId = parseInt(event.target.id, 10);
+    const handleDeleteContactMethod = (id) => () => {
 
-        if(deleteMethodId > 0) {
+        console.log(id)
+
+        if(id > 0) {
             confirm({
                 description: "This action cannot be undone. Please confirm delete of contact detail from database.",
                 cancellationButtonProps: { variant: 'outlined' },
@@ -103,86 +87,81 @@ export default function EditContactForm({ isNew = false }) {
                         {'Ok'}
                     </>
                 ),
-            }).then( () => {
-                figsCrmAPI.deleteContactDetailById(deleteMethodId).then( () => {
+            }).then( async () => {
+
+                try {
+                    await deleteContactDetail(id);
+                    // on successful delete, remove from existing array
+                    contact.setFieldValue('contactsList', contact.values.contactsList.filter( method => method.id !== id))
                     enqueueSnackbar(`Deleted contact method from ${contactName}`, { variant: 'warning' })
-                })
-            })
-        }
+                } catch (error) {
+                    
+                    enqueueSnackbar( ...formatErrorSnackbar(
+                        error,
+                        'Error Deleting contact method'
+                    ))
+                }
 
-        // remove from existing array
-        const newMethodsList = contactMethodsInput.filter( method => method.id !== deleteMethodId)
-        console.log(newMethodsList)
-
-        setContactMethodsInput([...newMethodsList]);
-    }
-
-    // handler for controlled input of method
-    const handleChangeContactMethod = (event, index, propertyToChange ) => {
-
-        const updatedInputs = [...contactMethodsInput];
-
-        updatedInputs[index][propertyToChange] = event.target.value;
-        setContactMethodsInput(updatedInputs);
-    }
-
-
-
-    const handleSaveContact = async (event) => {
-        event.preventDefault();
-        setLoading(true);
-        let contactId = contactInput?.id;
-
-        // when the contact is new....
-        if(isNew) {
-            try {
-                const newContact = await figsCrmAPI.createContact({...contactInput, customer: customerURI});
-                contactId = newContact.data.id;
-            } catch (error) {
-                console.log(error);
-            }
-
+            }).catch(
+                () => {
+                    const message = `Cancelled deleting of method`
+                    enqueueSnackbar(message, { variant: 'info', style: {whiteSpace: 'pre-line'} });
+                }
+            )
         } else {
-            // when the contact is existing
-            try {
-                const existingContactProperties = {...contactInput}
-                await figsCrmAPI.patchContactById(contactId, existingContactProperties)
-            } catch (error) {
-                console.log(error);
-            }
+            // remove from existing array
+            contact.setFieldValue('contactsList', contact.values.contactsList.filter( (method) => method.id !== id))
+            enqueueSnackbar(`Deleted contact method from ${contactName}`, { variant: 'warning' })
         }
-        // batch save of the contact methods...
-        try {
-            await figsCrmAPI.patchContactById(contactId, {contactsList: contactMethodsInput})
-        } catch (error) {
-            console.log(error)
-        }
-
-        enqueueSnackbar("Successfully saved contact", { variant: 'success' });
-        setLoading(false);
-        navigate(`../${contactId}`)
-
     }
 
-    // boolean comparing controlled input to starting values
-    const isButtonActive = isNew ? (
-        contactInput.active !== emptyContact.active ||
-        contactInput.avatarId !== emptyContact.avatarId ||
-        contactInput.firstName !== emptyContact.firstName ||
-        contactInput.lastName !== emptyContact.lastName ||
-        contactInput.title !== emptyContact.title ||
-        contactInput.department !== emptyContact.department 
-    ) : (
-        contactInput.active !== contactData.active ||
-        contactInput.avatarId !== contactData.avatarId ||
-        contactInput.firstName !== contactData.firstName ||
-        contactInput.lastName !== contactData.lastName ||
-        contactInput.title !== contactData.title ||
-        contactInput.department !== contactData.department
-    )
+    const handleFormikSubmit = async (values) => {
+
+        try {
+            let savedContact
+
+            if(isNew) savedContact = await createContact(values)
+            else {
+
+                // filter any elements in contact that have changed
+                const propsToUpdate =
+                    Object.fromEntries(
+                        Object.entries(values).filter(([key, value]) => !isEqual(existingContact.data[key], value) )
+                    )
+
+                savedContact = await updateContact(existingContact.data.id, propsToUpdate)
+            }
+
+            enqueueSnackbar(
+                `Successfully ${isNew ? "created" : "updated"} ${savedContact.data.firstName} ${savedContact.data.lastName}`,
+                { variant: 'success' }
+            )
+
+            navigate('../')
+        } catch (error) {
+            
+            enqueueSnackbar( ...formatErrorSnackbar(
+                error,
+                'Error Submitting Form'
+            ))
+        }
+    }
+
+    // formik hook
+    const contact = useFormik({
+        initialValues: isNew ? { ...emptyContact, customerId } : existingContact.data,
+        validationSchema: contactValidationSchema,
+        onSubmit: handleFormikSubmit
+    })
+
+    const title = isNew ? 'New Contact' : 'Edit Contact';
+    const contactStatus = contact.values.isActive ? 'ACTIVE' : 'INACTIVE';
+    const statusColor = contact.values.isActive ? 'success' : 'error';
+    const avatarUrl = `/assets/images/avatars/avatar_${contact.values.avatarId}.jpg`;
+    const contactName = (`${contact.values.firstName} ${contact.values.lastName}`).trim()
 
     return (
-        <form>
+        <form noValidate onSubmit={contact.handleSubmit}>
             <Helmet>
                 <title> {`${title} | Figs-CRM`} </title>
             </Helmet>
@@ -203,8 +182,8 @@ export default function EditContactForm({ isNew = false }) {
 
 
                 <FormControlLabel
-                    checked={contactInput.active}
-                    control={<Switch color={statusColor} id='active' onChange={handleChangeContactInput}/>}
+                    checked={contact.values.isActive}
+                    control={<Switch color={statusColor} id='isActive' onChange={contact.handleChange}/>}
                     sx={{ display: 'flex', justifyContent: 'space-between', textAlign: 'left', mt: 2, ml: 0 }}
                     labelPlacement='start'
                     label={
@@ -224,8 +203,10 @@ export default function EditContactForm({ isNew = false }) {
                         fullWidth
                         id='firstName'
                         label='First Name'
-                        value={contactInput.firstName}
-                        onChange={handleChangeContactInput}
+                        value={contact.values.firstName}
+                        onChange={contact.handleChange}
+                        error={Boolean(contact.errors.firstName && contact.touched.firstName)}
+                        helperText={contact.touched.firstName && contact.errors.firstName}
                     />
                 </Grid>
 
@@ -236,8 +217,10 @@ export default function EditContactForm({ isNew = false }) {
                         fullWidth
                         id='lastName'
                         label='Last Name'
-                        value={contactInput.lastName}
-                        onChange={handleChangeContactInput}
+                        value={contact.values.lastName}
+                        onChange={contact.handleChange}
+                        error={Boolean(contact.errors.lastName && contact.touched.lastName)}
+                        helperText={contact.touched.lastName && contact.errors.lastName}
                     />
                 </Grid>
 
@@ -248,8 +231,10 @@ export default function EditContactForm({ isNew = false }) {
                         fullWidth
                         id='title'
                         label='Job Title'
-                        value={contactInput.title}
-                        onChange={handleChangeContactInput}
+                        value={contact.values.title}
+                        onChange={contact.handleChange}
+                        error={Boolean(contact.errors.title && contact.touched.title)}
+                        helperText={contact.touched.title && contact.errors.title}
                     />
                 </Grid>
 
@@ -260,38 +245,46 @@ export default function EditContactForm({ isNew = false }) {
                         fullWidth
                         id='department'
                         label='Department'
-                        value={contactInput.department}
-                        onChange={handleChangeContactInput}
+                        value={contact.values.department}
+                        onChange={contact.handleChange}
+                        error={Boolean(contact.errors.department && contact.touched.department)}
+                        helperText={contact.touched.department && contact.errors.department}
                     />
                 </Grid>
 
                 {
-                    contactMethodsInput.map((contactMethod, index) => {
+                    contact.values.contactsList && contact.values.contactsList.map((contactMethod, index) => {
                         const { id, contactType, contactDetail } = contactMethod;
-
+                        const type = `contactsList[${index}].contactType`
+                        const detail = `contactsList[${index}].contactDetail`
+                        
                         return (
                             <Grid item container xs={12} key={id}>
-                                <IconButton onClick={handleDeleteContactMethod} id={id}>
+                                <IconButton onClick={handleDeleteContactMethod(id)} id={id}>
                                     <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} id={id}/>
                                 </IconButton>
-                                <FormControl sx={{ minWidth: 100, mr: 2, mb:2 }}>
-                                    <InputLabel id='method-type'>Type</InputLabel>
-                                    <Select
-                                        labelId='method-type'
-                                        id='contactType'
-                                        value={contactType}
-                                        onChange={(event) => handleChangeContactMethod(event, index, 'contactType')}
-                                    >
-                                        <MenuItem value='Phone'>Phone</MenuItem>
-                                        <MenuItem value='Email'>Email</MenuItem>
-                                    </Select>
-                                </FormControl>
                                 <TextField
-                                    name={`contactDetail-${id}`}
-                                    id='contactDetail'
+                                    name={type}
+                                    id={type}
+                                    label="Type"
+                                    select
+                                    value={contactType}
+                                    onChange={contact.handleChange}
+                                    error={Boolean(getIn(contact.touched, type) && getIn(contact.errors, type))}
+                                    helperText={getIn(contact.touched, type) && getIn(contact.errors, type)}
+                                >
+                                    <MenuItem value="Phone">Phone</MenuItem>
+                                    <MenuItem value="Email">Email</MenuItem>
+                                </TextField>
+                                
+                                <TextField
+                                    name={detail}
+                                    id={detail}
                                     label='Details'
                                     value={contactDetail}
-                                    onChange={(event) => handleChangeContactMethod(event, index, 'contactDetail')}
+                                    onChange={contact.handleChange}
+                                    error={Boolean(getIn(contact.touched, detail) && getIn(contact.errors, detail))}
+                                    helperText={getIn(contact.touched, detail) && getIn(contact.errors, detail)}
                                     sx={{ flexGrow: 1}}
                                     InputProps={{
                                         startAdornment: (
@@ -312,11 +305,17 @@ export default function EditContactForm({ isNew = false }) {
                 </Grid>
 
                 <Grid item xs={12} sx={{ textAlign: 'end' }}>
+                    <Button
+                        sx={{ mr: 2 }}
+                        variant='outline'
+                        onClick={() => navigate('../')}
+                    >
+                        Cancel
+                    </Button>
                     <LoadingButton
-                        disabled={!isButtonActive}
-                        loading={loading}
+                        disabled={!contact.dirty}
+                        loading={contact.isSubmitting}
                         variant='contained'
-                        onClick={handleSaveContact}
                         type='submit'
                     >
                         {isNew ? <span>Create Contact</span> : <span>Update Contact</span>}
@@ -325,7 +324,7 @@ export default function EditContactForm({ isNew = false }) {
             </FieldsCard>
             </Grid>
 
-            <ContactAvatarDialog open={openAvatarSelect} onClose={handleCloseDialog} currentAvatarId={contactInput.avatarId} />
+            <ContactAvatarDialog open={openAvatarSelect} onClose={handleCloseDialog} currentAvatarId={contact.values.avatarId} />
 
 
         </form>
