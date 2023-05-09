@@ -13,7 +13,7 @@ import { TableListHead, TableListToolbar, TablePopOver } from '../components/tab
 // sections
 import { CustomerTableBody } from '../sections/tables';
 // API
-import { figsCrmAPI } from '../service/FigsCRMBackend';
+import { getCustomersList, deleteCustomerById } from '../service/API-v2/CustomersService';
 // Hooks
 import useTableList from '../hooks/useTableList'
 
@@ -52,7 +52,7 @@ export default function TableCustomersList() {
     handleOpenMenu,
     handleCloseMenu,
     handleClickDelete
-  } = useTableList(figsCrmAPI.getCustomersList, 'customers', figsCrmAPI.deleteCustomerById )
+  } = useTableList(getCustomersList, 'customers', deleteCustomerById )
 
   const emptyRows = pageNumber > 0 ? pageSize - data.length : 0;
 

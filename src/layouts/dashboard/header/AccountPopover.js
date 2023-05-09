@@ -1,26 +1,28 @@
 import { useState } from 'react';
 // @mui
 import { alpha } from '@mui/material/styles';
-import { Box, Divider, Typography, Stack, MenuItem, Avatar, IconButton, Popover } from '@mui/material';
+import { Box, Divider, Typography, MenuItem, Avatar, IconButton, Popover } from '@mui/material';
 // mocks_
 import account from '../../../_mock/account';
+// auth endpoints
+import { authLogout } from '../../../service/API-v2/AuthService';
 
 // ----------------------------------------------------------------------
 
-const MENU_OPTIONS = [
-  {
-    label: 'Home',
-    icon: 'eva:home-fill',
-  },
-  {
-    label: 'Profile',
-    icon: 'eva:person-fill',
-  },
-  {
-    label: 'Settings',
-    icon: 'eva:settings-2-fill',
-  },
-];
+// const MENU_OPTIONS = [
+//   {
+//     label: 'Home',
+//     icon: 'eva:home-fill',
+//   },
+//   {
+//     label: 'Profile',
+//     icon: 'eva:person-fill',
+//   },
+//   {
+//     label: 'Settings',
+//     icon: 'eva:settings-2-fill',
+//   },
+// ];
 
 // ----------------------------------------------------------------------
 
@@ -33,9 +35,22 @@ export default function AccountPopover() {
 
   const handleClose = () => {
     setOpen(null);
-    // insert API call for logging out and returning successfule log out page...
+    // insert API call for logging out and returning successful log out page...
   };
 
+  const handleLogout = async ()  => {
+
+    try {
+      
+      // logout api call...
+      await authLogout()
+      handleClose()
+    } catch (error) {
+      console.log(error)
+    }
+
+
+  }
   return (
     <>
       <IconButton
@@ -88,17 +103,23 @@ export default function AccountPopover() {
 
         <Divider sx={{ borderStyle: 'dashed' }} />
 
-        <Stack sx={{ p: 1 }}>
+        <Box sx={{ p: 1 }}>
+          <Typography variant="body2">
+            Account and role settings coming, check back soon! The backend is currently being updated to allow for users and roles.
+          </Typography>
+        </Box>
+
+        {/* <Stack sx={{ p: 1 }}>
           {MENU_OPTIONS.map((option) => (
             <MenuItem key={option.label} onClick={handleClose}>
               {option.label}
             </MenuItem>
           ))}
-        </Stack>
+        </Stack> */}
 
         <Divider sx={{ borderStyle: 'dashed' }} />
 
-        <MenuItem onClick={handleClose} sx={{ m: 1 }}>
+        <MenuItem onClick={handleLogout} sx={{ m: 1 }}>
           Logout
         </MenuItem>
       </Popover>

@@ -25,7 +25,7 @@ export default function AboutMe() {
 
                     <Grid item>
                         <Avatar
-                            src=''
+                            src='/assets/images/developer/rfigueroa_headshot.jpg'
                             sx={{ width: 200, height: 200 }}
                             />
                     </Grid>

@@ -3,7 +3,11 @@
 
 > CRM made from template components from MINIMALS.CC as well as custom components by Rafael Figueroa
 
-![preview](public/assets/preview.jpg)
+![preview](public/assets/previews/HomePage.jpg)
+
+![preview](public/assets/previews/CustomersPage.jpg)
+
+![preview](public/assets/previews/TicketsPage.jpg)
 
 
 
