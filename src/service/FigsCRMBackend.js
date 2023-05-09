@@ -22,7 +22,12 @@ export default axiosInstance;
 // baseURL: "https://728pe9uco3.execute-api.us-west-2.amazonaws.com/test/api/v1"
 // baseURL: "http://localhost:5000/api/v2"
 // baseURL: "https://728pe9uco3.execute-api.us-west-2.amazonaws.com/test/api/v1"
+// baseURL: "https://728pe9uco3.execute-api.us-west-2.amazonaws.com/test/api/v1"
 // baseURL: "https://avvs4yohf2.execute-api.us-west-2.amazonaws.com/Backend-API/api/v2"
+
+
+// for our secure backend, we can either return the results, an error, or 401 when there is no/invalid credentials, and 403 with valid credentials 
+// but not enough privelages"http://localhost:5000/api/v2"
 
 
 // for our secure backend, we can either return the results, an error, or 401 when there is no/invalid credentials, and 403 with valid credentials 
