@@ -25,7 +25,7 @@ export default function DashboardAppPage() {
             </Typography>
           </Grid>
 
-          <Grid item>
+          {/* <Grid item>
             <Typography variant="h6">
               USERNAME: guest
             </Typography>
@@ -35,7 +35,7 @@ export default function DashboardAppPage() {
             <Typography variant="h6" sx={{ mb: 5 }}>
               PASSWORD: demo123
             </Typography>
-          </Grid>
+          </Grid> */}
 
           <Grid item>
             <Typography variant="body1" sx={{ mb: 5 }} textAlign='center'>
@@ -57,7 +57,7 @@ export default function DashboardAppPage() {
           </Grid>
 
           <Grid item width='100%' mb={5}>
-          <Stack direction={{xs: 'column', sm: 'row'}} justifyContent='space-around' spacing={{xs: 2, sm: 10}}>
+          <Stack direction={{xs: 'column', sm: 'row'}} justifyContent='space-evenly'>
             <Stack direction={{ xs: 'column' }} alignItems='center'>
               <IconButton size='large' href='https://github.com/figueroa-r/figs-crm' target='_blank'> 
                 <Iconify icon='mdi:source-repository' width={80} />
