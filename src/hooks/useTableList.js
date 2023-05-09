@@ -4,6 +4,7 @@ import { useSnackbar } from 'notistack';
 
 // components
 import Iconify from '../components/iconify';
+import { formatErrorSnackbar } from '../utils/formatErrorMessage';
 
 export default function useTableList(apiGetListFunction, listType, apiDeleteByIdFunction) {
   const emptyWarningTarget = { id: null, name: '' };
@@ -23,7 +24,7 @@ export default function useTableList(apiGetListFunction, listType, apiDeleteById
   const [pageNumber, setPageNumber] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [sortField, setSortField] = useState(defaultSortField);
-  const [sortDirection, setSortDirection] = useState(listType === 'tickets' ? 'desc' : 'asc');
+  const [sortDirection, setSortDirection] = useState(listType === 'tickets' ? 'desc' : 'asc'); // listType is one of ['customers', 'contacts', 'tickets']
 
   // state for popover menu, table row selections, and filter name string
   const [open, setOpen] = useState(null);
@@ -37,11 +38,25 @@ export default function useTableList(apiGetListFunction, listType, apiDeleteById
   // fetch function call...
   const fetchTableData = async () => {
     setIsLoading(true);
-    const response = await apiGetListFunction(pageNumber, pageSize, sortField, sortDirection);
-    setData(response.data._embedded[listType]); // listType is one of ['customers', 'contacts', 'tickets']
-    setTotalPages(response.data.page.totalPages);
-    setTotalElements(response.data.page.totalElements);
-    setIsLoading(false);
+
+    try {
+
+      // fetch table data from endpoint, and update state
+      const response = await apiGetListFunction(pageNumber, pageSize, sortField, sortDirection);
+      
+      setData(response.data.data); 
+      setTotalPages(response.data.page.totalPages);
+      setTotalElements(response.data.page.totalElements);
+    } catch (error) {
+
+      enqueueSnackbar(...formatErrorSnackbar(
+        error,
+        "Error fetching table data"
+      ))      
+    } finally {
+      
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -106,22 +121,30 @@ export default function useTableList(apiGetListFunction, listType, apiDeleteById
       description: `This action cannot be undone. Please confirm delete of ${warningTarget.name}.`,
       cancellationButtonProps: { variant: 'outlined' },
       confirmationButtonProps: { variant: 'contained', color: 'error' },
-      confirmationText: (
-        <>
-          <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
-          {'Ok'}
-        </>
-      ),
-    })
-      .then(() => {
-        apiDeleteByIdFunction(warningTarget.id).then(() => {
-          enqueueSnackbar(`Deleted ${listType.slice(0, listType.length - 1)}: ${warningTarget.name}`, {
-            variant: 'warning',
-          });
-          fetchTableData();
-        });
-      })
-      .catch(() => setWarningTarget(emptyWarningTarget));
+      confirmationText: (<><Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />{'Ok'}</>),
+    }).then(async () => {
+      
+      // when delete is confirmed...
+      try {
+        
+        // call delete function and enqueue snackbar
+        await apiDeleteByIdFunction(warningTarget.id)
+        enqueueSnackbar(`Deleted ${listType.slice(0, listType.length - 1)}: ${warningTarget.name}`, { variant: 'warning' })
+      } catch (error) {
+
+        enqueueSnackbar( ...formatErrorSnackbar(
+          error,
+          `Error deleting ${listType.slice(0, listType.length - 1)}`
+        ))
+        
+
+      } finally {
+
+        // update table data
+        fetchTableData()
+      }
+      // catch for cancelling delete of entity
+      }).catch(() => setWarningTarget(emptyWarningTarget));
   };
 
   return {

@@ -22,20 +22,10 @@ import TableTicketsList from './pages/TableTicketsList';
 import EditTicketForm from './pages/EditTicketForm';
 import ViewTicket from './pages/ViewTicket';
 
-// import CustomersList from './pages/TableCustomersList';
-// import CustomersPageView from './pages/CustomersPageView';
-// import CustomerContactForm from './pages/customer-contacts/CustomerContactForm';
-// import CustomerTicketsList from './pages/customer-tickets/CustomerTicketsList';
-// import CustomerTicketForm from './pages/customer-tickets/CustomerTicketForm';
-
-
-// mock data for loaders
-// import customers from './_mock/customer';
-// import customerContacts from './_mock/customer_contacts';
-// import customerTickets from './_mock/customerTickets';
-
 // api for loaders
-import { figsCrmAPI } from './service/FigsCRMBackend';
+import { getCustomerById } from './service/API-v2/CustomersService';
+import { getContactById } from './service/API-v2/ContactsService';
+import { getTicketById, getTicketContext } from './service/API-v2/TicketsService';
 
 // ----------------------------------------------------------------------
 
@@ -62,7 +52,7 @@ export default function Router() {
             { path: 'new', element: <EditCustomerForm isNew />, handle: { crumb: () => 'New', pageTitle: 'New Customer' }},
             { path: ':customerId',
               element: <SingleCustomerLayout />, // State management for single customer (basic info, contact/avatar mapping)
-              loader: ({ params }) => figsCrmAPI.getCustomerById(params.customerId),
+              loader: ({ params }) => getCustomerById(params.customerId),
               handle: { crumb: (loaderData) => loaderData.name, pageTitle: 'Customer Details', button: { name: 'Edit Customer', link: 'edit'} },
               children: [
                 { element: <ViewCustomer />, errorElement: <Page404 />, index: true, id: 'tabs1' }, // customer view
@@ -84,14 +74,14 @@ export default function Router() {
                       path: ':contactId',
                       element: <ViewContact />,
                       errorElement: <Page404 />,
-                      loader: ({ params }) => figsCrmAPI.fetchContactById(params.contactId),
+                      loader: ({ params }) => getContactById(params.contactId),
                       handle: { crumb: (loaderData) => `${loaderData.firstName} ${loaderData.lastName}`, pageTitle: 'View Contact', button: { name: 'Edit Contact', link: 'edit'} }
                     },
                     {
                       path: ':contactId/edit',
                       element: <EditContactForm />,
                       errorElement: <Page404 />,
-                      loader: ({ params }) => figsCrmAPI.fetchContactById(params.contactId),
+                      loader: ({ params }) => getContactById(params.contactId),
                       handle: { crumb: (loaderData) => `${loaderData.firstName} ${loaderData.lastName}`, pageTitle: 'Edit Contact' }
                     }
                   ]
@@ -100,7 +90,7 @@ export default function Router() {
                   path: 'tickets',
                   element: <CustomerTicketsLayout />, // simple tickets layout
                   errorElement: <Page404 />,
-                  loader: ({ params }) => figsCrmAPI.fetchTicketContext(params.customerId),
+                  loader: ({ params }) => getTicketContext(params.customerId),
                   handle: { crumb: () => 'Tickets', pageTitle: 'Customer Details', button: {name: 'New Ticket', link: 'new'}},
                   children: [
                     { element: <TableTicketsList />, errorElement: <Page404 />, id: 'tabs3', index: true },
@@ -114,14 +104,14 @@ export default function Router() {
                       path: ':ticketId',
                       element: <ViewTicket />,
                       errorElement: <Page404 />,
-                      loader: ({ params }) => figsCrmAPI.fetchTicketById(params.ticketId),
+                      loader: ({ params }) => getTicketById(params.ticketId),
                       handle: { crumb: (loaderData) => `TICKET-${loaderData.id}`, pageTitle: 'View Ticket', button: { name: 'Edit Ticket', link: 'edit'}}
                     },
                     {
                       path: ':ticketId/edit',
                       element: <EditTicketForm />,
                       errorElement: <Page404 />,
-                      loader: ({ params }) => figsCrmAPI.fetchTicketById(params.ticketId),
+                      loader: ({ params }) => getTicketById(params.ticketId),
                       handle: { crumb: (loaderData) => `TICKET-${loaderData.id}`, pageTitle: 'Edit Ticket'}
                     }
                   ]

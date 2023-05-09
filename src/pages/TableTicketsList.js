@@ -13,7 +13,7 @@ import { TableListHead, TableListToolbar, TablePopOver } from '../components/tab
 // sections
 import { TicketsTableBody } from '../sections/tables';
 // API
-import { figsCrmAPI } from '../service/FigsCRMBackend';
+import { deleteTicketById, getTicketsList } from '../service/API-v2/TicketsService';
 // Hooks
 import useTableList from '../hooks/useTableList';
 
@@ -57,7 +57,7 @@ export default function TableTicketsList() {
         handleOpenMenu,
         handleCloseMenu,
         handleClickDelete
-    } = useTableList(figsCrmAPI.fetchTicketsList(customerId), 'tickets', figsCrmAPI.deleteTicketById)
+    } = useTableList(getTicketsList(customerId), 'tickets', deleteTicketById)
 
     const emptyRows = pageNumber > 0 ? pageSize - data.length : 0;
 

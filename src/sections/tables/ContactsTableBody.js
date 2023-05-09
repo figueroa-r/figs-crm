@@ -44,8 +44,7 @@ export default function ContactsTableBody({
         <>
         <TableBody>
             {contactArray.map((row) => {
-                const { id, avatarId, firstName, lastName, title, department, active: isActive } = row;
-                const name = (`${firstName} ${lastName}`).trim();
+                const { id, avatarId, fullName, title, department, isActive } = row;
                 const avatarUrl = `/assets/images/avatars/avatar_${avatarId}.jpg`
 
                 const selectedContact = selectedContacts.has(id);
@@ -58,9 +57,9 @@ export default function ContactsTableBody({
 
                         <TableCell component="th" scope="row" padding="none">
                             <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar alt={name} src={avatarUrl}>{name[0]}</Avatar>
+                            <Avatar alt={fullName} src={avatarUrl}>{fullName[0]}</Avatar>
                             <Typography variant="subtitle2" noWrap>
-                                {name}
+                                {fullName}
                             </Typography>
                             </Stack>
                         </TableCell>
@@ -74,7 +73,7 @@ export default function ContactsTableBody({
                         </TableCell>
 
                         <TableCell align="right">
-                            <IconButton size="large" color="inherit" onClick={handleOpenMenu} key={id} id={id} data-name={name}>
+                            <IconButton size="large" color="inherit" onClick={handleOpenMenu} key={id} id={id} data-name={fullName}>
                             <Iconify icon={'eva:more-vertical-fill'} />
                             </IconButton>
                         </TableCell>

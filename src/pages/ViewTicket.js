@@ -9,29 +9,27 @@ import { DateTime } from 'luxon';
 import { Grid, TextField, Typography } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 
+// utils
+import { formatErrorSnackbar } from '../utils/formatErrorMessage';
+
 // components
 import Iconify from '../components/iconify';
 import Label from '../components/label';
 import { AvatarCard, FieldsCard, TicketInteractionsCard } from '../components/card-containers';
 
 // API
-import { figsCrmAPI } from '../service/FigsCRMBackend';
-
-
-
+import { createInteraction } from '../service/API-v2/TicketsService';
 
 
 export default function ViewTicket() {
 
     const { data: ticketData } = useLoaderData();
-    const { isOpen, creationDate, primaryContactId, categoryId, priorityId, ticketNotes, interactions, _links: { self : { href: ticketUri }}} = ticketData;
- 
-
+    const { id, isOpen, creationDate, primaryContactId, categoryId, priorityId, ticketNotes, interactions } = ticketData;
     const { categoriesMap, prioritiesMap, contactsMap } = useOutletContext();
 
     const { enqueueSnackbar } = useSnackbar();
 
-    // will need state for controlled interaction input...
+    // state for controlled interaction input...
     const [newInteraction, setNewInteraction] = useState('');
     const [loadingIndicator, setLoadingIndicator] = useState(false);
 
@@ -50,34 +48,33 @@ export default function ViewTicket() {
     }
 
     // eslint-disable-next-line
-    const handleCreateNewInteraction = async (event) => {
+    const handleCreateNewInteraction = async () => {
 
         // const interaction = { user: 'Guest User', interactionDate: DateTime.now(), interactionDetails: newInteraction }
         const interaction = {
             user: 'Guest User',
             interactionDate: DateTime.now(),
             interactionDetails: newInteraction,
-            ticket: ticketUri
+            ticketId: id
         }
 
         setLoadingIndicator(true);
 
         try {
-            const response = await figsCrmAPI.createInteraction(interaction);
 
-            if( response.status >= 400 ) {
-                throw new Error('There was an error creating the interaction. Try again');
-            }
+            const response = await createInteraction(interaction);
             setNewInteraction('');
-            setLoadingIndicator(false);
             setInteractionsList([response.data, ...interactionsList])
-
             enqueueSnackbar('Successfully created interaction', {variant: 'success'});
-
-
         } catch (error) {
-            enqueueSnackbar(error.message, {variant: 'warning'})
-            setLoadingIndicator(false);
+
+            enqueueSnackbar( ...formatErrorSnackbar(
+                error,
+                'Error creating interaction'
+            ))
+        } finally {
+
+            setLoadingIndicator(false)
         }
         
     }
